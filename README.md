@@ -103,6 +103,7 @@ components:
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
 | `src/data/departmentHeads.ts` | Department-head carousel data — **placeholder names/photos, TBA from the board** |
 | `src/data/resources.ts` | External resource links (logos self-hosted under `public/logos/`) |
+| `src/data/giving.ts` | EFT banking details shown in the Give card's expandable panel |
 
 ## Known open items (carried over from the design handoff)
 
@@ -112,9 +113,12 @@ original handoff and are **not** blockers for this MVP:
 1. **Department head names + photos** — placeholders (`[Naam 1]`…`[Naam 6]`)
    in `src/data/departmentHeads.ts`; swap in real `name`/`photoUrl` per person
    once supplied.
-2. **"Get involved" contacts** — Connect / Bible Studies / Give cards all
-   currently link back to their own section; real contact methods (form,
-   email, phone, giving-platform link) are TBA.
+2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies link
+   to `mailto:sdatygerbergkerk@gmail.com` (with a pre-filled subject), and
+   Give shows real EFT banking details (`src/data/giving.ts`) in an
+   expandable panel. The contact email is also on the Visit card and footer.
+   Still open: a dedicated form or per-ministry routing if the board wants
+   something more structured than a shared inbox later.
 3. **Live-stream detection** — `/api/live-status` (see `src/worker/`) is
    wired for the YouTube Data API but needs a `YOUTUBE_API_KEY` +
    `YOUTUBE_CHANNEL_ID` to use it; otherwise it's a manual flag.

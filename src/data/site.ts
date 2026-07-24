@@ -13,6 +13,7 @@ export const SITE = {
   // Channel's auto-generated "uploads" playlist — always shows the latest video, zero maintenance.
   youtubeUploadsEmbedUrl: 'https://www.youtube.com/embed/videoseries?list=UUtZlioPBBORWMMMSJ9BE1Wg',
   beliefsPdfUrl: 'https://szu.adventist.org/wp-content/uploads/2016/04/28_Beliefs.pdf',
+  contactEmail: 'sdatygerbergkerk@gmail.com',
   // Manual live-stream flag for MVP — no backend/YouTube Data API key wired up yet.
   // Flip to true when the church is actively streaming; the video area otherwise
   // always falls back to the uploads-playlist embed above.

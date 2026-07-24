@@ -33,9 +33,11 @@ export type HomeCopy = {
   connectTitle: string;
   connectDesc: string;
   connectCta: string;
+  connectEmailSubject: string;
   studyTitle: string;
   studyDesc: string;
   studyCta: string;
+  studyEmailSubject: string;
   giveTitle: string;
   giveDesc: string;
   giveCta: string;
@@ -47,6 +49,7 @@ export type HomeCopy = {
   visitEyebrow: string;
   visitHeading: string;
   visitAddressLabel: string;
+  emailLabel: string;
   copyAddress: string;
   addressCopied: string;
   directionsCta: string;
@@ -102,12 +105,14 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     connectTitle: 'Verbind',
     connectDesc: "Kry 'n antwoord op jou vrae — ons stel jou aan die regte persoon voor.",
     connectCta: 'Kontak iemand',
+    connectEmailSubject: 'Navraag',
     studyTitle: 'Bybelstudies',
     studyDesc: "Vra 'n gratis Bybel- of doopstudie by jou tuiste aan.",
     studyCta: "Versoek 'n studie",
+    studyEmailSubject: 'Bybelstudie versoek',
     giveTitle: 'Skenk',
-    giveDesc: 'Ondersteun die bediening met jou tiendes en gawes, veilig aanlyn.',
-    giveCta: 'Gee aanlyn',
+    giveDesc: 'Ondersteun die bediening met jou tiendes en gawes via EFT.',
+    giveCta: 'Bankbesonderhede',
     resourcesHeading: 'Voed jou geloof daagliks',
     resourcesSub: 'Amptelike Adventiste hulpbronne vir studie en aanbidding.',
     resLesson: 'Lesstudie Biblioteek',
@@ -116,6 +121,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     visitEyebrow: 'Besoek Ons',
     visitHeading: 'Sluit by ons aan hierdie Sabbat',
     visitAddressLabel: 'Adres',
+    emailLabel: 'E-pos',
     copyAddress: 'Kopieer Adres',
     addressCopied: 'Gekopieer!',
     directionsCta: 'Kry Aanwysings',
@@ -168,12 +174,14 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     connectTitle: 'Connect',
     connectDesc: 'Get an answer to your questions — we’ll introduce you to the right person.',
     connectCta: 'Contact someone',
+    connectEmailSubject: 'Inquiry',
     studyTitle: 'Bible Studies',
     studyDesc: 'Request a free Bible study or baptismal study in your home.',
     studyCta: 'Request a study',
+    studyEmailSubject: 'Bible study request',
     giveTitle: 'Give',
-    giveDesc: 'Support the ministry with your tithe and offerings, securely online.',
-    giveCta: 'Give online',
+    giveDesc: 'Support the ministry with your tithe and offerings via EFT.',
+    giveCta: 'Banking details',
     resourcesHeading: 'Feed your faith daily',
     resourcesSub: 'Official Adventist resources for study and worship.',
     resLesson: 'Lesson Study Library',
@@ -182,6 +190,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     visitEyebrow: 'Visit Us',
     visitHeading: 'Join us this Sabbath',
     visitAddressLabel: 'Address',
+    emailLabel: 'Email',
     copyAddress: 'Copy Address',
     addressCopied: 'Copied!',
     directionsCta: 'Get Directions',

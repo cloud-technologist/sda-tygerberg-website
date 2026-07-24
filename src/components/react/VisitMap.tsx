@@ -56,6 +56,12 @@ export function VisitMap() {
                 <span className="font-bold text-ink">Sat {entry.time}</span>
               </div>
             ))}
+            <div className="flex justify-between text-sm">
+              <span className="text-slate">{t.emailLabel}</span>
+              <a href={`mailto:${SITE.contactEmail}`} className="font-bold text-navy hover:text-orange">
+                {SITE.contactEmail}
+              </a>
+            </div>
           </div>
 
           <a
