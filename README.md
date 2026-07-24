@@ -96,7 +96,10 @@ One-time setup:
   deployment" → Source to **GitHub Actions**.
 - **Cloudflare**: add repo secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts +
   Account Settings: Edit) and `CLOUDFLARE_ACCOUNT_ID` under Settings →
-  Secrets and variables → Actions.
+  Secrets and variables → Actions. Production is wired to
+  `tygerberg-sda.cloudkid.link` via the `routes` entry in `wrangler.jsonc`
+  (`custom_domain: true`) — `wrangler deploy` attaches it automatically
+  since the `cloudkid.link` zone already lives in that Cloudflare account.
 
 Both workflows read the Node version from `.nvmrc`, so bumping that file is
 enough to move CI to a newer Node LTS.

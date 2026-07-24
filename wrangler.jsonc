@@ -14,7 +14,12 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  "routes": [
+    // Production custom domain (zone already lives in the Cloudflare
+    // account) — `wrangler deploy` provisions/attaches this automatically.
+    { "pattern": "tygerberg-sda.cloudkid.link", "custom_domain": true }
+  ]
 
   // --- Optional: scheduled YouTube live-status polling (see README) ---
   // Uncomment once you've created the KV namespace (`wrangler kv namespace
