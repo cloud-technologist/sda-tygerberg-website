@@ -41,6 +41,7 @@ jobs:
         run: npm run build
         env:
           ASTRO_BASE: /${{ github.event.repository.name }}/
+          PUBLIC_HAS_API: 'false'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

@@ -13,7 +13,7 @@ import { Footer } from './Footer';
 export function Home() {
   return (
     <LanguageProvider>
-      <div className="min-h-screen overflow-x-hidden font-sans text-ink">
+      <div className="min-h-screen font-sans text-ink">
         <Header />
         <a id="top" />
         <Hero />

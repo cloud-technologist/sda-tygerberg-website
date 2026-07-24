@@ -12,7 +12,8 @@ export const SITE = {
   youtubeVideosUrl: 'https://www.youtube.com/@SDATygerberg/videos',
   // Channel's auto-generated "uploads" playlist — always shows the latest video, zero maintenance.
   youtubeUploadsEmbedUrl: 'https://www.youtube.com/embed/videoseries?list=UUtZlioPBBORWMMMSJ9BE1Wg',
-  beliefsPdfUrl: 'https://szu.adventist.org/wp-content/uploads/2016/04/28_Beliefs.pdf',
+  // Self-hosted so the download works without depending on an external site.
+  beliefsPdfPath: '/SDA-28-Fundamental-Beliefs.pdf',
   contactEmail: 'sdatygerbergkerk@gmail.com',
   // Manual live-stream flag for MVP — no backend/YouTube Data API key wired up yet.
   // Flip to true when the church is actively streaming; the video area otherwise

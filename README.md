@@ -76,7 +76,7 @@ Two independent workflows under `.github/workflows/`:
 
 | Workflow | Target | Trigger | Notes |
 |---|---|---|---|
-| `deploy-devtest-pages.yml` | GitHub Pages | push to `main`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath. No `/api/*` — the live badge just stays off. |
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `main`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` and `PUBLIC_HAS_API=false` since Pages project sites serve from a subpath and have no `/api/*` (that needs the Worker) — the live-status poll is skipped entirely at build time rather than hitting an endpoint that would always 404, and the badge just stays off. |
 | `deploy-production-cloudflare.yml` | Cloudflare Workers | manual only | The real site, full Worker + `/api/*`. Deliberately not automatic on every push. |
 
 One-time setup:
@@ -125,6 +125,5 @@ original handoff and are **not** blockers for this MVP:
 4. **Weekly ministry schedule** — currently 4 fixed entries in
    `homeCopy.ts`; move to a CMS/KV-backed endpoint if it starts changing
    seasonally (the Worker is already the natural place to add that route).
-5. **Mobile hamburger nav** — header nav still wraps via flexbox on narrow
-   widths rather than collapsing behind a menu button, matching the original
-   design handoff's noted gap.
+5. ~~**Mobile hamburger nav**~~ — resolved: below the `lg` breakpoint the
+   header nav collapses behind a hamburger button (`src/components/react/Header.tsx`).

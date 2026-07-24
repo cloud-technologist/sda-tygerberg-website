@@ -5,11 +5,17 @@ import { useEffect, useState } from 'react';
  * `wrangler dev`/deployed (not plain `astro dev`), so failures are swallowed
  * and default to false — the stream box always falls back to the uploads
  * playlist embed regardless of this flag.
+ *
+ * The GitHub Pages devtest build is static-only (no Worker), so it sets
+ * PUBLIC_HAS_API=false at build time to skip the request entirely rather
+ * than poll an endpoint that will always 404.
  */
 export function useLiveStatus(): boolean {
   const [isLive, setIsLive] = useState(false);
+  const hasApi = import.meta.env.PUBLIC_HAS_API !== 'false';
 
   useEffect(() => {
+    if (!hasApi) return;
     let cancelled = false;
 
     const check = () => {

@@ -23,7 +23,7 @@ export function GetInvolved() {
         <h2 className="mb-10 text-center font-serif text-[34px] font-medium">
           {t.involvedHeading}
         </h2>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-5">
           <div className={cardClass(false)}>
             <div className="mb-2.5 font-serif text-xl">{t.connectTitle}</div>
             <p className="mb-4 text-sm leading-relaxed text-blue-pale">{t.connectDesc}</p>

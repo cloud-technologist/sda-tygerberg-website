@@ -9,7 +9,7 @@ export function Footer() {
 
   return (
     <footer className="bg-navy-deep text-blue-pale">
-      <div className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-8 px-7 py-11">
+      <div className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-8 px-7 py-11">
         <div>
           <div className="mb-3 flex items-center gap-2.5">
             <Logo size={30} ringColor="#cfe0e8" />
