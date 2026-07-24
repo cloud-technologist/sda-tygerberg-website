@@ -8,12 +8,12 @@ export function ServiceTimesStrip() {
 
   return (
     <section className="bg-navy text-white">
-      <div className="mx-auto flex max-w-content flex-wrap items-center justify-center gap-x-0 gap-y-3 px-7 py-5 text-center">
-        <span className="border-l border-white/20 px-5 py-1 text-xs font-bold uppercase tracking-[.1em] first:border-l-0">
+      <div className="mx-auto flex max-w-content flex-col items-center gap-2 px-7 py-5 text-center sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-0 sm:gap-y-3">
+        <span className="text-xs font-bold uppercase tracking-[.1em] sm:border-l sm:border-white/20 sm:px-5 sm:py-1 sm:first:border-l-0">
           {t.timesLabel}
         </span>
         {SERVICE_TIMES.map((entry) => (
-          <span key={entry.en} className="border-l border-white/20 px-5 py-1 text-sm">
+          <span key={entry.en} className="text-sm sm:border-l sm:border-white/20 sm:px-5 sm:py-1">
             {entry[lang]} <strong className="text-base">{entry.time}</strong>
           </span>
         ))}

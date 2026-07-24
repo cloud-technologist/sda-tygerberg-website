@@ -16,7 +16,7 @@ function BeliefsContent() {
   let counter = 0;
 
   return (
-    <div className="min-h-screen overflow-x-hidden font-sans text-ink">
+    <div className="min-h-screen font-sans text-ink">
       <BeliefsHeader />
 
       <section className="mx-auto max-w-[780px] px-7 pb-8 pt-16 text-center">
@@ -31,9 +31,8 @@ function BeliefsContent() {
           {t.sub}
         </p>
         <a
-          href={SITE.beliefsPdfUrl}
-          target="_blank"
-          rel="noopener"
+          href={withBase(SITE.beliefsPdfPath)}
+          download
           className="inline-flex items-center gap-2 rounded-pill border-[1.5px] border-navy px-5 py-2.5 text-[13.5px] font-bold text-navy hover:bg-navy hover:text-white"
         >
           {t.pdfCta} ↓

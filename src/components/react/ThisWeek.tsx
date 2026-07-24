@@ -9,7 +9,7 @@ export function ThisWeek() {
     <section id="week" className="mx-auto max-w-content scroll-mt-24 px-7 py-16">
       <h2 className="mb-2 font-serif text-[34px] font-medium text-ink">{t.weekHeading}</h2>
       <p className="mb-8 text-slate">{t.weekSub}</p>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(220px,100%),1fr))] gap-4">
         {t.week.map((entry) => (
           <div
             key={entry.day}

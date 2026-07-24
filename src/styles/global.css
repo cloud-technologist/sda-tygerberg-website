@@ -38,6 +38,15 @@
  * would otherwise win over every utility class regardless of specificity.
  */
 @layer base {
+  html {
+    /*
+     * Kept on html, not a descendant wrapper: overflow-x on an ancestor of a
+     * `position: sticky` element breaks stickiness in WebKit, so this must
+     * not sit between the sticky header and the viewport.
+     */
+    overflow-x: hidden;
+  }
+
   body {
     margin: 0;
     background-color: var(--color-cream);
@@ -48,5 +57,16 @@
   a {
     color: var(--color-navy);
     text-decoration: none;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

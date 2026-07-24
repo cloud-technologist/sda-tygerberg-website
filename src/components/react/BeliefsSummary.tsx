@@ -9,7 +9,7 @@ export function BeliefsSummary() {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (
-    <section id="glo" className="mx-auto grid max-w-content scroll-mt-24 grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-13 px-7 py-16">
+    <section id="glo" className="mx-auto grid max-w-content scroll-mt-24 grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-13 px-7 py-16">
       <div className="self-start md:sticky md:top-25">
         <div className="mb-4 text-xs font-bold uppercase tracking-[.16em] text-orange">
           {lang === 'af' ? '28 FUNDAMENTELE LEERSTELLINGS' : '28 FUNDAMENTAL BELIEFS'}

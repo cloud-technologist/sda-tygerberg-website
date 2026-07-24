@@ -28,7 +28,7 @@ export function VisitMap() {
 
   return (
     <section id="besoek" className="scroll-mt-24 bg-tan py-16">
-      <div className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5 px-7">
+      <div className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(min(280px,100%),1fr))] gap-5 px-7">
         <div className="rounded-card-lg bg-cream-card p-7 shadow-card">
           <div className="mb-2 text-xs font-bold uppercase tracking-[.16em] text-orange">
             {t.visitEyebrow}
@@ -56,6 +56,12 @@ export function VisitMap() {
                 <span className="font-bold text-ink">Sat {entry.time}</span>
               </div>
             ))}
+            <div className="flex justify-between text-sm">
+              <span className="text-slate">{t.emailLabel}</span>
+              <a href={`mailto:${SITE.contactEmail}`} className="font-bold text-navy hover:text-orange">
+                {SITE.contactEmail}
+              </a>
+            </div>
           </div>
 
           <a

@@ -9,7 +9,7 @@ export function Hero() {
   const isLive = useLiveStatus();
 
   return (
-    <section className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-center gap-13 px-7 pb-10 pt-15">
+    <section className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] items-center gap-13 px-7 pb-10 pt-15">
       <div>
         <div className="mb-5 text-xs font-bold uppercase tracking-[.16em] text-orange">
           {t.heroEyebrow}
