@@ -1,0 +1,55 @@
+name: Deploy devtest (GitHub Pages)
+
+# Free, no-secrets-required preview build. Static only — the /api/* routes
+# from src/worker/ aren't available here (that needs the Cloudflare Worker,
+# see deploy-production-cloudflare.yml); the live-stream badge just stays
+# hidden and falls back to the uploads-playlist embed as usual.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (base path = /${{ github.event.repository.name }}/)
+        run: npm run build
+        env:
+          ASTRO_BASE: /${{ github.event.repository.name }}/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

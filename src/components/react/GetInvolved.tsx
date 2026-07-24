@@ -31,7 +31,10 @@ export function GetInvolved() {
             >
               <div className="mb-2.5 font-serif text-xl">{card.title}</div>
               <p className="mb-4 text-sm leading-relaxed text-blue-pale">{card.desc}</p>
-              <a href="#betrokke" className="text-sm font-bold text-orange hover:text-white">
+              <a
+                href="#betrokke"
+                className="inline-flex items-center gap-1.5 rounded-pill bg-orange px-4 py-2 text-[13px] font-bold text-white hover:bg-orange-hover"
+              >
                 {card.cta} →
               </a>
             </div>

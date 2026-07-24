@@ -1,5 +1,6 @@
 import { useLanguage } from '../../context/LanguageContext';
 import { beliefsCopy } from '../../data/beliefsCopy';
+import { withBase } from '../../lib/base';
 import { Logo } from './Logo';
 import { LanguageToggle } from './LanguageToggle';
 
@@ -10,7 +11,7 @@ export function BeliefsHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-subtle bg-cream/95 backdrop-blur">
       <div className="mx-auto flex max-w-content-narrow flex-wrap items-center justify-between gap-4 px-5 py-3">
-        <a href="/" className="flex items-center gap-3">
+        <a href={withBase('/')} className="flex items-center gap-3">
           <Logo />
           <div className="leading-tight">
             <div className="font-serif text-lg font-semibold text-navy">Tygerberg</div>
@@ -19,7 +20,7 @@ export function BeliefsHeader() {
             </div>
           </div>
         </a>
-        <a href="/" className="text-sm font-semibold text-ink hover:text-navy">
+        <a href={withBase('/')} className="text-sm font-semibold text-ink hover:text-navy">
           ← {t.backHome}
         </a>
         <LanguageToggle />

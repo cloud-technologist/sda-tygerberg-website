@@ -3,6 +3,7 @@ import { LanguageProvider, useLanguage } from '../../context/LanguageContext';
 import { beliefsCopy } from '../../data/beliefsCopy';
 import { beliefCategories } from '../../data/beliefs';
 import { SITE } from '../../data/site';
+import { withBase } from '../../lib/base';
 import { BeliefsHeader } from './BeliefsHeader';
 
 function BeliefsContent() {
@@ -116,7 +117,7 @@ function BeliefsContent() {
             </div>
             <span className="font-serif text-base text-white">Tygerberg SDA</span>
           </div>
-          <a href="/" className="text-[13.5px] font-bold text-orange hover:text-white">
+          <a href={withBase('/')} className="text-[13.5px] font-bold text-orange hover:text-white">
             {t.backHome} →
           </a>
         </div>

@@ -1,4 +1,6 @@
-import { getLiveStatus, type Env } from './liveStatus';
+/// <reference types="@cloudflare/workers-types" />
+
+import { getLiveStatus, pollAndCacheLiveStatus, type Env } from './liveStatus';
 
 /**
  * Thin API layer in front of the static Astro build. Static assets are served
@@ -18,5 +20,12 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
+  },
+
+  // Fires on the schedule configured in wrangler.jsonc's `triggers.crons`
+  // (disabled by default — see README for opt-in setup). Polls YouTube and
+  // caches the result in KV so /api/live-status stays a cheap read.
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(pollAndCacheLiveStatus(env));
   },
 };
