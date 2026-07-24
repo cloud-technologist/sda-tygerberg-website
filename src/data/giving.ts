@@ -23,7 +23,7 @@ export const givingCopy: Record<
   }
 > = {
   af: {
-    accountDetailsLabel: 'Bankrekeningbesonderhede',
+    accountDetailsLabel: 'Bank Besonderhede',
     bankLabel: 'Bank',
     accountNumberLabel: 'Rekeningnommer',
     branchCodeLabel: 'Tak kode',
