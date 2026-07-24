@@ -70,14 +70,25 @@ of `wrangler.jsonc` and paste in the namespace id it prints. The worker code
 already supports both modes (`src/worker/liveStatus.ts`) — this is purely a
 config toggle, no code changes needed.
 
+## Branch strategy
+
+- **`dev`** — integration branch. Feature PRs target `dev`; every merge
+  auto-deploys the devtest preview (GitHub Pages).
+- **`main`** — production branch. Only moves via a gated `dev` -> `main`
+  promotion PR, which is reviewed like any other change; merging it
+  auto-deploys to Cloudflare (the live site).
+
+This keeps production deploys deliberate (a reviewed promotion PR) without
+requiring a manual dispatch for every release.
+
 ## CI/CD (GitHub Actions)
 
 Two independent workflows under `.github/workflows/`:
 
 | Workflow | Target | Trigger | Notes |
 |---|---|---|---|
-| `deploy-devtest-pages.yml` | GitHub Pages | push to `main`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` and `PUBLIC_HAS_API=false` since Pages project sites serve from a subpath and have no `/api/*` (that needs the Worker) — the live-status poll is skipped entirely at build time rather than hitting an endpoint that would always 404, and the badge just stays off. |
-| `deploy-production-cloudflare.yml` | Cloudflare Workers | manual only | The real site, full Worker + `/api/*`. Deliberately not automatic on every push. |
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` and `PUBLIC_HAS_API=false` since Pages project sites serve from a subpath and have no `/api/*` (that needs the Worker) — the live-status poll is skipped entirely at build time rather than hitting an endpoint that would always 404, and the badge just stays off. |
+| `deploy-production-cloudflare.yml` | Cloudflare Workers | push to `main`, or manual | The real site, full Worker + `/api/*`. Gated by the `dev` -> `main` promotion PR described above; manual dispatch is available for a re-deploy without a new merge. |
 
 One-time setup:
 
