@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { SERVICE_TIMES, SITE } from '../../data/site';
+import { withBase } from '../../lib/base';
 
 export function VisitMap() {
   const { lang } = useLanguage();
@@ -77,7 +78,7 @@ export function VisitMap() {
 
         <div className="relative min-h-[300px] overflow-hidden rounded-card-lg">
           <iframe
-            src="/map"
+            src={withBase('/map.html')}
             title="Map"
             loading="lazy"
             className="h-full min-h-[300px] w-full border-0"

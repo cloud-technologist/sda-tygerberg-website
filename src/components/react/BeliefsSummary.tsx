@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
+import { withBase } from '../../lib/base';
 
 export function BeliefsSummary() {
   const { lang } = useLanguage();
@@ -16,7 +17,7 @@ export function BeliefsSummary() {
         <h2 className="mb-4 font-serif text-[34px] font-medium text-ink">{t.beliefsHeading}</h2>
         <p className="mb-7 text-slate">{t.beliefsSub}</p>
         <a
-          href="/beliefs/"
+          href={withBase('/beliefs/')}
           className="inline-block rounded-pill bg-orange px-5.5 py-3 font-semibold text-white hover:bg-orange-hover"
         >
           {t.beliefRead}

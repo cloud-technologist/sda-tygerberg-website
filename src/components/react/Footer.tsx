@@ -37,10 +37,10 @@ export function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-content flex-wrap items-center gap-4 px-7 py-5 text-xs">
           <span>© {new Date().getFullYear()} Tygerberg SDA</span>
-          <a href="https://cloudkid.link" target="_blank" rel="noopener" className="text-blue-pale hover:text-white">
+          <a href="https://cloudkid.link" target="_blank" rel="noopener" className="font-semibold text-orange hover:text-white">
             Created by Cloudkid Technologist ™ · cloudkid.link
           </a>
-          <a href="https://adventist.org" target="_blank" rel="noopener" className="text-blue-pale hover:text-white">
+          <a href="https://adventist.org" target="_blank" rel="noopener" className="font-semibold text-orange hover:text-white">
             Part of the worldwide Adventist Church · adventist.org
           </a>
         </div>

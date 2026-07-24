@@ -1,6 +1,7 @@
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { resources } from '../../data/resources';
+import { withBase } from '../../lib/base';
 
 export function Resources() {
   const { lang } = useLanguage();
@@ -17,15 +18,16 @@ export function Resources() {
             href={resource.url}
             target="_blank"
             rel="noopener"
-            className="flex items-center gap-4 rounded-card border border-subtle bg-cream-card p-5 shadow-card hover:border-navy"
+            className="flex items-center gap-4 rounded-card border border-subtle border-t-2 border-t-orange bg-cream-card p-5 shadow-card hover:border-orange"
           >
-            <span className="flex h-11.5 w-11.5 flex-none items-center justify-center rounded-card bg-white">
-              <img src={resource.logo} alt="" className="h-7 w-7 object-contain" />
+            <span className="flex h-11.5 w-11.5 flex-none items-center justify-center rounded-card bg-white ring-1 ring-orange/25">
+              <img src={withBase(resource.logo)} alt="" className="h-7 w-7 object-contain" />
             </span>
-            <span>
+            <span className="flex-1">
               <div className="font-serif text-base text-ink">{resource.name[lang]}</div>
               <div className="text-xs text-slate-muted">{resource.domain}</div>
             </span>
+            <span className="flex-none text-lg text-orange">→</span>
           </a>
         ))}
       </div>

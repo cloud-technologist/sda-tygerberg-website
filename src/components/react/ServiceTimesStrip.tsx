@@ -1,6 +1,6 @@
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
-import { SERVICE_TIMES, SITE } from '../../data/site';
+import { SERVICE_TIMES } from '../../data/site';
 
 export function ServiceTimesStrip() {
   const { lang } = useLanguage();
@@ -17,7 +17,6 @@ export function ServiceTimesStrip() {
             {entry[lang]} <strong className="text-base">{entry.time}</strong>
           </span>
         ))}
-        <span className="border-l border-white/20 px-5 py-1 text-sm">{SITE.address}</span>
       </div>
     </section>
   );

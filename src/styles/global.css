@@ -32,14 +32,21 @@
   --container-content-narrow: 1020px;
 }
 
-body {
-  margin: 0;
-  background-color: var(--color-cream);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-}
+/*
+ * Scoped to Tailwind's base layer so component utility classes (text-orange,
+ * text-white, etc.) can override these defaults as normal — unlayered CSS
+ * would otherwise win over every utility class regardless of specificity.
+ */
+@layer base {
+  body {
+    margin: 0;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
 
-a {
-  color: var(--color-navy);
-  text-decoration: none;
+  a {
+    color: var(--color-navy);
+    text-decoration: none;
+  }
 }

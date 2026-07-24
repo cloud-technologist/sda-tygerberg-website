@@ -55,6 +55,41 @@ in `wrangler.jsonc` (default `false`). Either way, the stream box always
 embeds the channel's uploads playlist, so "latest video by default" works
 with zero maintenance regardless of live status.
 
+### Scheduled polling (optional)
+
+By default `/api/live-status` checks YouTube directly on each request. To
+instead poll on a schedule and cache the result in KV (cheaper, avoids
+hitting the YouTube API quota on every page load):
+
+```sh
+wrangler kv namespace create LIVE_STATUS_KV
+```
+
+then uncomment the `kv_namespaces` and `triggers.crons` blocks at the bottom
+of `wrangler.jsonc` and paste in the namespace id it prints. The worker code
+already supports both modes (`src/worker/liveStatus.ts`) — this is purely a
+config toggle, no code changes needed.
+
+## CI/CD (GitHub Actions)
+
+Two independent workflows under `.github/workflows/`:
+
+| Workflow | Target | Trigger | Notes |
+|---|---|---|---|
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `main`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath. No `/api/*` — the live badge just stays off. |
+| `deploy-production-cloudflare.yml` | Cloudflare Workers | manual only | The real site, full Worker + `/api/*`. Deliberately not automatic on every push. |
+
+One-time setup:
+
+- **GitHub Pages**: in the repo's Settings → Pages, set "Build and
+  deployment" → Source to **GitHub Actions**.
+- **Cloudflare**: add repo secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts +
+  Account Settings: Edit) and `CLOUDFLARE_ACCOUNT_ID` under Settings →
+  Secrets and variables → Actions.
+
+Both workflows read the Node version from `.nvmrc`, so bumping that file is
+enough to move CI to a newer Node LTS.
+
 ## Content that's easy to edit
 
 All copy and structured content lives under `src/data/`, separate from
