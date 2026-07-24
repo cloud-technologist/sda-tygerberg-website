@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tygerberg-sda-website",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2025-01-09",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    // MVP default: no live-stream badge until the church board wires up a
+    // YOUTUBE_API_KEY + YOUTUBE_CHANNEL_ID secret, or flips this manually.
+    "MANUAL_LIVE_FLAG": "false"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

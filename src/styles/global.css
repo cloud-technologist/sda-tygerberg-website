@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+/* Design tokens ported from the design handoff (reference/tokens/*.css) */
+@theme {
+  --color-navy: #0b3d54;
+  --color-navy-deep: #072a3b;
+  --color-orange: #e8862c;
+  --color-orange-hover: #c06a1a;
+  --color-cream: #f6f2e9;
+  --color-cream-card: #fffdf8;
+  --color-tan: #eee7d8;
+  --color-tan-border: #e2d5bd;
+  --color-ink: #17252e;
+  --color-slate: #3f4d55;
+  --color-slate-muted: #5c6b73;
+  --color-blue-muted: #9fc3d4;
+  --color-blue-pale: #cfe0e8;
+  --color-subtle: rgba(23, 37, 46, 0.1);
+  --color-strong: rgba(23, 37, 46, 0.25);
+
+  --font-serif: 'Newsreader', serif;
+  --font-sans: 'Public Sans', system-ui, sans-serif;
+
+  --radius-pill: 999px;
+  --radius-card: 14px;
+  --radius-card-lg: 16px;
+
+  --shadow-card: 0 20px 40px -30px rgba(23, 37, 46, 0.25);
+  --shadow-deep: 0 30px 60px -30px rgba(7, 42, 59, 0.6);
+
+  --container-content: 1180px;
+  --container-content-narrow: 1020px;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: var(--color-navy);
+  text-decoration: none;
+}
