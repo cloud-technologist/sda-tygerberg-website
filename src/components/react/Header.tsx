@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { SITE } from '../../data/site';
@@ -25,7 +25,7 @@ function DirectionsLink({ onClick, className = '' }: { onClick?: () => void; cla
       target="_blank"
       rel="noopener"
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-pill border border-strong px-3.5 py-2 text-xs font-semibold text-ink hover:border-navy hover:text-navy ${className}`}
+      className={`h-8 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-pill border border-orange bg-orange/5 px-2.5 sm:px-3.5 text-[11px] sm:text-xs font-bold text-navy hover:bg-orange hover:text-white transition-colors ${className}`}
     >
       <span className="inline-block h-[7px] w-[7px] rotate-45 rounded-[0_50%_50%_50%] border-[1.5px] border-current" />
       {t.navDirections}
@@ -38,6 +38,13 @@ export function Header() {
   const t = homeCopy[lang];
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleScroll = () => setMenuOpen(false);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [menuOpen]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-subtle bg-cream/90 backdrop-blur">
@@ -65,7 +72,7 @@ export function Header() {
           <LanguageToggle />
           <a
             href="#betrokke"
-            className="rounded-pill bg-orange px-4.5 py-2 text-[13px] font-bold text-white hover:bg-orange-hover"
+            className="h-8 inline-flex shrink-0 items-center justify-center rounded-pill border border-orange bg-orange px-2.5 sm:px-3.5 text-[11px] sm:text-xs font-bold text-white hover:bg-orange-hover transition-colors"
           >
             {t.give}
           </a>
@@ -112,13 +119,13 @@ export function Header() {
               </a>
             ))}
           </nav>
-          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-subtle pt-3.5">
+          <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-subtle pt-3.5">
             <DirectionsLink onClick={closeMenu} />
             <LanguageToggle />
             <a
               href="#betrokke"
               onClick={closeMenu}
-              className="rounded-pill bg-orange px-4.5 py-2 text-[13px] font-bold text-white hover:bg-orange-hover"
+              className="h-8 inline-flex shrink-0 items-center justify-center rounded-pill border border-orange bg-orange px-2.5 sm:px-3.5 text-[11px] sm:text-xs font-bold text-white hover:bg-orange-hover transition-colors"
             >
               {t.give}
             </a>

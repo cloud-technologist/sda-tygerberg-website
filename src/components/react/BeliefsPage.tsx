@@ -5,6 +5,8 @@ import { beliefCategories } from '../../data/beliefs';
 import { SITE } from '../../data/site';
 import { withBase } from '../../lib/base';
 import { BeliefsHeader } from './BeliefsHeader';
+import { Logo } from './Logo';
+import { LanguageToggle } from './LanguageToggle';
 
 function BeliefsContent() {
   const { lang } = useLanguage();
@@ -108,17 +110,22 @@ function BeliefsContent() {
         </section>
       ))}
 
-      <footer className="bg-navy-deep text-blue-pale">
-        <div className="mx-auto flex max-w-[820px] flex-wrap items-center justify-between gap-4 px-7 py-11">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-navy">
-              <div className="h-3 w-3 rotate-45 rounded-[0_50%_50%_50%] border-2 border-blue-pale" />
-            </div>
-            <span className="font-serif text-base text-white">Tygerberg SDA</span>
-          </div>
-          <a href={withBase('/')} className="text-[13.5px] font-bold text-orange hover:text-white">
-            {t.backHome} →
+      <footer className="relative overflow-hidden border-t-2 border-orange bg-navy-deep text-blue-pale">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-orange/15 via-transparent to-orange/10" />
+        <div className="relative z-10 mx-auto flex max-w-content-narrow items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-6 sm:py-8">
+          <a href={withBase('/')} className="flex items-center gap-2 sm:gap-2.5 shrink min-w-0">
+            <Logo size={28} ringColor="#e8862c" />
+            <span className="font-serif text-sm sm:text-base text-white truncate">Tygerberg SDA</span>
           </a>
+          <a
+            href={withBase('/')}
+            className="h-8 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-pill border border-orange bg-orange/10 px-2.5 sm:px-3.5 text-[11px] sm:text-xs font-bold text-orange hover:bg-orange hover:text-white transition-colors"
+          >
+            {t.backHome}
+          </a>
+          <div className="flex shrink-0 items-center justify-end">
+            <LanguageToggle variant="navy" />
+          </div>
         </div>
       </footer>
     </div>

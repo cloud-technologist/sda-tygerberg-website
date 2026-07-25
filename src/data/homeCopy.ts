@@ -37,6 +37,8 @@ export type HomeCopy = {
   giveTitle: string;
   giveDesc: string;
   giveCta: string;
+  connectCta: string;
+  studyCta: string;
   resourcesHeading: string;
   resourcesSub: string;
   resLesson: string;
@@ -69,7 +71,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     heroTitle: 'Vind rus, hoop en genesing in Jesus',
     heroSub:
       'Sluit elke Sabbat by ons aan in Boston, Kaapstad — of kyk lewendig van waar jy ook al is.',
-    ctaVisit: "Beplan 'n Besoek",
+    ctaVisit: 'Besoek ons gemeente',
     ctaWatch: 'Kyk Lewendig',
     liveLabel: 'LEWENDIG',
     tabReplay: 'Onlangse Diens',
@@ -104,6 +106,8 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     giveTitle: 'Skenk',
     giveDesc: 'Ondersteun die bediening met jou tiendes en gawes via EFT.',
     giveCta: 'Bankbesonderhede',
+    connectCta: 'Kontak ons',
+    studyCta: 'Vra studie aan',
     resourcesHeading: 'Voed jou geloof daagliks',
     resourcesSub: 'Amptelike Adventiste hulpbronne vir studie en aanbidding.',
     resLesson: 'Lesstudie Biblioteek',
@@ -133,7 +137,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     heroEyebrow: 'Seventh-day Adventist Church · Tygerberg',
     heroTitle: 'Find rest, hope and healing in Jesus',
     heroSub: 'Join us every Sabbath in Boston, Cape Town — or watch live from wherever you are.',
-    ctaVisit: 'Plan a Visit',
+    ctaVisit: 'Visit our church',
     ctaWatch: 'Watch Live',
     liveLabel: 'LIVE',
     tabReplay: 'Latest Service',
@@ -168,6 +172,8 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     giveTitle: 'Give',
     giveDesc: 'Support the ministry with your tithe and offerings via EFT.',
     giveCta: 'Banking details',
+    connectCta: 'Contact us',
+    studyCta: 'Request study',
     resourcesHeading: 'Feed your faith daily',
     resourcesSub: 'Official Adventist resources for study and worship.',
     resLesson: 'Lesson Study Library',
