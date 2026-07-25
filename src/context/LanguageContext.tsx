@@ -35,9 +35,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Kept out of the try below on purpose. This can't throw, and grouping it
+    // with localStorage meant that blocked site data (Safari private mode)
+    // skipped it too — leaving English content announced with Afrikaans
+    // pronunciation, which is the one part here that actually matters.
+    document.documentElement.lang = lang;
+
     try {
       window.localStorage.setItem(STORAGE_KEY, lang);
-      document.documentElement.lang = lang;
     } catch {
       // Ignore — persistence is a convenience, not required for the site to work.
     }
