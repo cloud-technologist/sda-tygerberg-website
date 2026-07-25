@@ -4,9 +4,13 @@ name: Deploy devtest (GitHub Pages)
 # from src/worker/ aren't available here (that needs the Cloudflare Worker,
 # see deploy-production-cloudflare.yml); the live-stream badge just stays
 # hidden and falls back to the uploads-playlist embed as usual.
+#
+# Triggers off `dev`, the integration branch — feature PRs merge here first
+# for preview, then a dev -> main PR gates promotion to production (see
+# README "Branch strategy").
 on:
   push:
-    branches: [main]
+    branches: [dev]
   workflow_dispatch:
 
 permissions:
@@ -41,6 +45,7 @@ jobs:
         run: npm run build
         env:
           ASTRO_BASE: /${{ github.event.repository.name }}/
+          PUBLIC_HAS_API: 'false'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

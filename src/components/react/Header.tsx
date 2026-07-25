@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { SITE } from '../../data/site';
@@ -15,13 +16,32 @@ const navLinks: { key: NavKey; href: string }[] = [
   { key: 'navResources', href: '#hulpbronne' },
 ];
 
+function DirectionsLink({ onClick, className = '' }: { onClick?: () => void; className?: string }) {
+  const { lang } = useLanguage();
+  const t = homeCopy[lang];
+  return (
+    <a
+      href={SITE.directionsUrl}
+      target="_blank"
+      rel="noopener"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-pill border border-strong px-3.5 py-2 text-xs font-semibold text-ink hover:border-navy hover:text-navy ${className}`}
+    >
+      <span className="inline-block h-[7px] w-[7px] rotate-45 rounded-[0_50%_50%_50%] border-[1.5px] border-current" />
+      {t.navDirections}
+    </a>
+  );
+}
+
 export function Header() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-subtle bg-cream/90 backdrop-blur">
-      <div className="mx-auto flex max-w-content flex-wrap items-center justify-between gap-4 px-5 py-3">
+      <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-5 py-3">
         <a href="#top" className="flex items-center gap-3">
           <Logo />
           <div className="leading-tight">
@@ -32,7 +52,7 @@ export function Header() {
           </div>
         </a>
 
-        <nav className="flex flex-wrap items-center gap-4 text-sm font-medium">
+        <nav className="hidden items-center gap-4 text-sm font-medium lg:flex">
           {navLinks.map((link) => (
             <a key={link.href} href={link.href} className="text-ink hover:text-navy">
               {t[link.key]}
@@ -40,16 +60,8 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <a
-            href={SITE.directionsUrl}
-            target="_blank"
-            rel="noopener"
-            className="flex items-center gap-1.5 rounded-pill border border-strong px-3.5 py-2 text-xs font-semibold text-ink hover:border-navy hover:text-navy"
-          >
-            <span className="inline-block h-[7px] w-[7px] rotate-45 rounded-[0_50%_50%_50%] border-[1.5px] border-current" />
-            {t.navDirections}
-          </a>
+        <div className="hidden items-center gap-3 lg:flex">
+          <DirectionsLink />
           <LanguageToggle />
           <a
             href="#betrokke"
@@ -58,7 +70,61 @@ export function Header() {
             {t.give}
           </a>
         </div>
+
+        <button
+          type="button"
+          aria-label={menuOpen ? (lang === 'af' ? 'Sluit kieslys' : 'Close menu') : lang === 'af' ? 'Open kieslys' : 'Open menu'}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+          className="flex h-10 w-10 flex-none items-center justify-center rounded-pill border border-strong text-ink lg:hidden"
+        >
+          <span className="relative block h-3.5 w-4.5">
+            <span
+              className={`absolute left-0 top-0 h-[1.5px] w-full bg-current transition-transform duration-200 ${
+                menuOpen ? 'translate-y-[6px] rotate-45' : ''
+              }`}
+            />
+            <span
+              className={`absolute left-0 top-1/2 h-[1.5px] w-full -translate-y-1/2 bg-current transition-opacity duration-200 ${
+                menuOpen ? 'opacity-0' : ''
+              }`}
+            />
+            <span
+              className={`absolute bottom-0 left-0 h-[1.5px] w-full bg-current transition-transform duration-200 ${
+                menuOpen ? '-translate-y-[6px] -rotate-45' : ''
+              }`}
+            />
+          </span>
+        </button>
       </div>
+
+      {menuOpen && (
+        <div className="border-t border-subtle bg-cream px-5 py-4 lg:hidden">
+          <nav className="flex flex-col gap-1 text-sm font-medium">
+            {navLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={closeMenu}
+                className="rounded-lg px-2 py-2.5 text-ink hover:bg-tan hover:text-navy"
+              >
+                {t[link.key]}
+              </a>
+            ))}
+          </nav>
+          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-subtle pt-3.5">
+            <DirectionsLink onClick={closeMenu} />
+            <LanguageToggle />
+            <a
+              href="#betrokke"
+              onClick={closeMenu}
+              className="rounded-pill bg-orange px-4.5 py-2 text-[13px] font-bold text-white hover:bg-orange-hover"
+            >
+              {t.give}
+            </a>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -70,14 +70,25 @@ of `wrangler.jsonc` and paste in the namespace id it prints. The worker code
 already supports both modes (`src/worker/liveStatus.ts`) — this is purely a
 config toggle, no code changes needed.
 
+## Branch strategy
+
+- **`dev`** — integration branch. Feature PRs target `dev`; every merge
+  auto-deploys the devtest preview (GitHub Pages).
+- **`main`** — production branch. Only moves via a gated `dev` -> `main`
+  promotion PR, which is reviewed like any other change; merging it
+  auto-deploys to Cloudflare (the live site).
+
+This keeps production deploys deliberate (a reviewed promotion PR) without
+requiring a manual dispatch for every release.
+
 ## CI/CD (GitHub Actions)
 
 Two independent workflows under `.github/workflows/`:
 
 | Workflow | Target | Trigger | Notes |
 |---|---|---|---|
-| `deploy-devtest-pages.yml` | GitHub Pages | push to `main`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath. No `/api/*` — the live badge just stays off. |
-| `deploy-production-cloudflare.yml` | Cloudflare Workers | manual only | The real site, full Worker + `/api/*`. Deliberately not automatic on every push. |
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` and `PUBLIC_HAS_API=false` since Pages project sites serve from a subpath and have no `/api/*` (that needs the Worker) — the live-status poll is skipped entirely at build time rather than hitting an endpoint that would always 404, and the badge just stays off. |
+| `deploy-production-cloudflare.yml` | Cloudflare Workers | push to `main`, or manual | The real site, full Worker + `/api/*`. Gated by the `dev` -> `main` promotion PR described above; manual dispatch is available for a re-deploy without a new merge. |
 
 One-time setup:
 
@@ -85,7 +96,10 @@ One-time setup:
   deployment" → Source to **GitHub Actions**.
 - **Cloudflare**: add repo secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts +
   Account Settings: Edit) and `CLOUDFLARE_ACCOUNT_ID` under Settings →
-  Secrets and variables → Actions.
+  Secrets and variables → Actions. Production is wired to
+  `tygerberg-sda.cloudkid.link` via the `routes` entry in `wrangler.jsonc`
+  (`custom_domain: true`) — `wrangler deploy` attaches it automatically
+  since the `cloudkid.link` zone already lives in that Cloudflare account.
 
 Both workflows read the Node version from `.nvmrc`, so bumping that file is
 enough to move CI to a newer Node LTS.
@@ -103,6 +117,7 @@ components:
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
 | `src/data/departmentHeads.ts` | Department-head carousel data — **placeholder names/photos, TBA from the board** |
 | `src/data/resources.ts` | External resource links (logos self-hosted under `public/logos/`) |
+| `src/data/giving.ts` | EFT banking details shown in the Give card's expandable panel |
 
 ## Known open items (carried over from the design handoff)
 
@@ -112,15 +127,17 @@ original handoff and are **not** blockers for this MVP:
 1. **Department head names + photos** — placeholders (`[Naam 1]`…`[Naam 6]`)
    in `src/data/departmentHeads.ts`; swap in real `name`/`photoUrl` per person
    once supplied.
-2. **"Get involved" contacts** — Connect / Bible Studies / Give cards all
-   currently link back to their own section; real contact methods (form,
-   email, phone, giving-platform link) are TBA.
+2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies link
+   to `mailto:sdatygerbergkerk@gmail.com` (with a pre-filled subject), and
+   Give shows real EFT banking details (`src/data/giving.ts`) in an
+   expandable panel. The contact email is also on the Visit card and footer.
+   Still open: a dedicated form or per-ministry routing if the board wants
+   something more structured than a shared inbox later.
 3. **Live-stream detection** — `/api/live-status` (see `src/worker/`) is
    wired for the YouTube Data API but needs a `YOUTUBE_API_KEY` +
    `YOUTUBE_CHANNEL_ID` to use it; otherwise it's a manual flag.
 4. **Weekly ministry schedule** — currently 4 fixed entries in
    `homeCopy.ts`; move to a CMS/KV-backed endpoint if it starts changing
    seasonally (the Worker is already the natural place to add that route).
-5. **Mobile hamburger nav** — header nav still wraps via flexbox on narrow
-   widths rather than collapsing behind a menu button, matching the original
-   design handoff's noted gap.
+5. ~~**Mobile hamburger nav**~~ — resolved: below the `lg` breakpoint the
+   header nav collapses behind a hamburger button (`src/components/react/Header.tsx`).

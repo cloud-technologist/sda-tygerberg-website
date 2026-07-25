@@ -32,10 +32,8 @@ export type HomeCopy = {
   involvedHeading: string;
   connectTitle: string;
   connectDesc: string;
-  connectCta: string;
   studyTitle: string;
   studyDesc: string;
-  studyCta: string;
   giveTitle: string;
   giveDesc: string;
   giveCta: string;
@@ -101,13 +99,11 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     involvedHeading: 'Raak betrokke',
     connectTitle: 'Verbind',
     connectDesc: "Kry 'n antwoord op jou vrae — ons stel jou aan die regte persoon voor.",
-    connectCta: 'Kontak iemand',
     studyTitle: 'Bybelstudies',
     studyDesc: "Vra 'n gratis Bybel- of doopstudie by jou tuiste aan.",
-    studyCta: "Versoek 'n studie",
     giveTitle: 'Skenk',
-    giveDesc: 'Ondersteun die bediening met jou tiendes en gawes, veilig aanlyn.',
-    giveCta: 'Gee aanlyn',
+    giveDesc: 'Ondersteun die bediening met jou tiendes en gawes via EFT.',
+    giveCta: 'Bankbesonderhede',
     resourcesHeading: 'Voed jou geloof daagliks',
     resourcesSub: 'Amptelike Adventiste hulpbronne vir studie en aanbidding.',
     resLesson: 'Lesstudie Biblioteek',
@@ -167,13 +163,11 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     involvedHeading: 'Get involved',
     connectTitle: 'Connect',
     connectDesc: 'Get an answer to your questions — we’ll introduce you to the right person.',
-    connectCta: 'Contact someone',
     studyTitle: 'Bible Studies',
     studyDesc: 'Request a free Bible study or baptismal study in your home.',
-    studyCta: 'Request a study',
     giveTitle: 'Give',
-    giveDesc: 'Support the ministry with your tithe and offerings, securely online.',
-    giveCta: 'Give online',
+    giveDesc: 'Support the ministry with your tithe and offerings via EFT.',
+    giveCta: 'Banking details',
     resourcesHeading: 'Feed your faith daily',
     resourcesSub: 'Official Adventist resources for study and worship.',
     resLesson: 'Lesson Study Library',

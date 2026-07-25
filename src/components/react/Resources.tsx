@@ -11,7 +11,7 @@ export function Resources() {
     <section id="hulpbronne" className="mx-auto max-w-content scroll-mt-24 px-7 py-16">
       <h2 className="mb-2 font-serif text-[34px] font-medium text-ink">{t.resourcesHeading}</h2>
       <p className="mb-8 text-slate">{t.resourcesSub}</p>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-5">
         {resources.map((resource) => (
           <a
             key={resource.domain}

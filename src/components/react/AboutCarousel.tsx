@@ -1,22 +1,36 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { departmentHeads } from '../../data/departmentHeads';
 
 const AUTOPLAY_MS = 4200;
-const CARDS_PER_PAGE = 3;
+const GAP_PX = 20; // matches gap-5
 
 export function AboutCarousel() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
-  const pageCount = Math.max(1, Math.ceil(departmentHeads.length / CARDS_PER_PAGE));
-  const [page, setPage] = useState(0);
+  const trackRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const scrollByCard = (dir: 1 | -1) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const card = track.querySelector<HTMLElement>('[data-card]');
+    const step = card ? card.offsetWidth + GAP_PX : track.clientWidth * 0.8;
+    track.scrollBy({ left: dir * step, behavior: 'smooth' });
+  };
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      setPage((p) => (p + 1) % pageCount);
+      const track = trackRef.current;
+      if (!track) return;
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      if (atEnd) {
+        track.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        scrollByCard(1);
+      }
     }, AUTOPLAY_MS);
   };
 
@@ -26,10 +40,10 @@ export function AboutCarousel() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageCount]);
+  }, []);
 
-  const goTo = (n: number) => {
-    setPage(((n % pageCount) + pageCount) % pageCount);
+  const nudge = (dir: 1 | -1) => {
+    scrollByCard(dir);
     resetTimer();
   };
 
@@ -45,75 +59,53 @@ export function AboutCarousel() {
           <button
             type="button"
             aria-label="Previous"
-            onClick={() => goTo(page - 1)}
-            className="absolute -left-3.5 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-navy text-white"
+            onClick={() => nudge(-1)}
+            className="absolute -left-3.5 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-navy text-white sm:flex"
           >
             ‹
           </button>
           <button
             type="button"
             aria-label="Next"
-            onClick={() => goTo(page + 1)}
-            className="absolute -right-3.5 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-navy text-white"
+            onClick={() => nudge(1)}
+            className="absolute -right-3.5 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-navy text-white sm:flex"
           >
             ›
           </button>
 
-          <div className="overflow-hidden">
-            <div
-              className="flex gap-5 transition-transform duration-500 ease-out"
-              style={{ transform: `translateX(-${page * 100}%)` }}
-            >
-              {Array.from({ length: pageCount }, (_, pageIndex) => (
-                <div key={pageIndex} className="grid w-full flex-none grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-5">
-                  {departmentHeads
-                    .slice(pageIndex * CARDS_PER_PAGE, pageIndex * CARDS_PER_PAGE + CARDS_PER_PAGE)
-                    .map((head) => (
-                      <div key={head.name} className="overflow-hidden rounded-card bg-cream-card">
-                        <div
-                          className="flex items-center justify-center text-xs text-slate-muted"
-                          style={{
-                            aspectRatio: '4/3',
-                            backgroundImage:
-                              'repeating-linear-gradient(45deg, var(--color-tan) 0 10px, var(--color-tan-border) 10px 20px)',
-                          }}
-                        >
-                          {head.photoUrl ? (
-                            <img
-                              src={head.photoUrl}
-                              alt={head.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            lang === 'af' ? 'HOD foto' : 'HOD photo'
-                          )}
-                        </div>
-                        <div className="p-4 text-center">
-                          <div className="font-serif text-lg text-navy">{head.name}</div>
-                          <div className="text-sm text-slate">{head.dept[lang]}</div>
-                        </div>
-                      </div>
-                    ))}
+          <div
+            ref={trackRef}
+            className="scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-1 pb-2"
+          >
+            {departmentHeads.map((head) => (
+              <div
+                key={head.name}
+                data-card
+                className="w-[72%] flex-none snap-start overflow-hidden rounded-card bg-cream-card sm:w-[45%] lg:w-[31%]"
+              >
+                <div
+                  className="flex items-center justify-center text-xs text-slate-muted"
+                  style={{
+                    aspectRatio: '4/3',
+                    backgroundImage:
+                      'repeating-linear-gradient(45deg, var(--color-tan) 0 10px, var(--color-tan-border) 10px 20px)',
+                  }}
+                >
+                  {head.photoUrl ? (
+                    <img src={head.photoUrl} alt={head.name} className="h-full w-full object-cover" />
+                  ) : lang === 'af' ? (
+                    'HOD foto'
+                  ) : (
+                    'HOD photo'
+                  )}
                 </div>
-              ))}
-            </div>
+                <div className="p-4 text-center">
+                  <div className="font-serif text-lg text-navy">{head.name}</div>
+                  <div className="text-sm text-slate">{head.dept[lang]}</div>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-
-        <div className="mt-6 flex justify-center gap-2">
-          {Array.from({ length: pageCount }, (_, i) => (
-            <button
-              key={i}
-              type="button"
-              aria-label={`Go to page ${i + 1}`}
-              onClick={() => goTo(i)}
-              className={
-                i === page
-                  ? 'h-2 w-6.5 rounded-pill bg-navy'
-                  : 'h-2 w-2 rounded-pill bg-navy/25'
-              }
-            />
-          ))}
         </div>
       </div>
     </section>
