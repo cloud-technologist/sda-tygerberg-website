@@ -30,9 +30,21 @@ const WEEKDAY_INDEX: Record<string, number> = {
   Sat: 6,
 };
 
+// Anchored so a term is either exactly `*`, `N`, or `N-M`, each with an
+// optional `/step`. Matching by shape first is what keeps `Number()` from
+// rescuing malformed input: `Number('')` is 0, so a bare `split('-')` would
+// read `-11` as `0-11` and swing the window open from midnight, and would
+// silently truncate `1-2-3` to `1-2`. Both now fail closed.
+const TERM_PATTERN = /^(\*|\d{1,2}|\d{1,2}-\d{1,2})(\/\d{1,2})?$/;
+
 function matchField(field: string, value: number, min: number, max: number): boolean {
-  // A field matches if *any* comma-separated term matches.
-  return field.split(',').some((term) => {
+  const terms = field.split(',');
+  // Every term must be well-formed, not just the one that happens to match —
+  // `9,,` and `9,-11` should be rejected outright rather than quietly working.
+  if (terms.length === 0 || !terms.every((term) => TERM_PATTERN.test(term))) return false;
+
+  // The field then matches if *any* of those terms matches.
+  return terms.some((term) => {
     const [range, stepText] = term.split('/');
     const step = stepText === undefined ? 1 : Number(stepText);
     if (!Number.isInteger(step) || step < 1) return false;
@@ -51,7 +63,6 @@ function matchField(field: string, value: number, min: number, max: number): boo
       hi = lo;
     }
 
-    if (!Number.isInteger(lo) || !Number.isInteger(hi)) return false;
     if (lo < min || hi > max || lo > hi) return false;
     if (value < lo || value > hi) return false;
     return (value - lo) % step === 0;
@@ -134,11 +145,19 @@ export function isWithinCronWindow(expression: string, now: Date, timeZone: stri
   );
 }
 
-/** Cheap syntax check used to report misconfiguration instead of silently never matching. */
-export function isValidCronWindow(expression: string, timeZone: string): boolean {
+/**
+ * Cheap syntax check used to report misconfiguration instead of silently
+ * never matching. Takes `now` so callers stay a pure function of their
+ * inputs — it's only used to validate the timezone.
+ */
+export function isValidCronWindow(
+  expression: string,
+  timeZone: string,
+  now = new Date(),
+): boolean {
   const fields = expression.trim().split(/\s+/);
   if (fields.length !== 5) return false;
-  if (zonedNow(new Date(), timeZone) === null) return false;
+  if (zonedNow(now, timeZone) === null) return false;
   // Every field must match at least one value in its range, otherwise the
   // expression can never fire and is almost certainly a typo.
   return fields.every((field, i) => {

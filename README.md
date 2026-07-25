@@ -67,10 +67,16 @@ quota in about 100 page views. Two things prevent that:
 1. **The window.** `LIVE_CHECK_CRON` is a standard 5-field cron expression
    read as a *window* rather than a schedule, evaluated in `LIVE_CHECK_TZ`.
    The default `* 9-11 * * 6` means "any minute from 09:00 to 11:59 on
-   Saturdays" — Sabbath School through Divine Service. Outside it the Worker
-   returns `outside-window` without calling YouTube at all, so six days a
-   week the badge costs nothing. Change the window by editing the `vars`
-   block in `wrangler.jsonc` and redeploying; no code change needed.
+   Saturdays". Outside it the Worker returns `outside-window` without calling
+   YouTube at all, so six days a week the badge costs nothing. Change the
+   window by editing the `vars` block in `wrangler.jsonc` and redeploying; no
+   code change needed.
+
+   **Note this closes at 12:00, while `SERVICE_TIMES` puts Divine Service at
+   11:00.** If a service runs past noon the badge goes dark mid-broadcast, and
+   because the client backs off to a 15-minute cadence once the window shuts,
+   it won't come back that morning. Widen the hour field (`9-13`) if that
+   matters.
 2. **The poll interval.** `LIVE_CHECK_MEMO_SECONDS` (default `300`, i.e. one
    poll every 5 minutes) is how often YouTube is actually called while the
    window is open — one answer is reused across every request in between, so
@@ -84,9 +90,13 @@ Writing `*/5 9-11 * * 6` to mean "poll every 5 minutes" would instead close
 the window for the four minutes between each mark, and the badge would blink
 off and on for viewers. Set the poll rate with `LIVE_CHECK_MEMO_SECONDS`.
 
-Worst case under the defaults: a 3-hour window at one poll per 5 minutes is
-36 polls, or 3,600 quota units — comfortably inside the 10,000/day free tier
-even if the isolate is recycled a few times.
+Budgeting: a 3-hour window at one poll per 5 minutes is 36 polls, or 3,600
+quota units. **That figure is per isolate, not global** — the memo is
+module-scope, and Cloudflare runs an isolate per colo, so the real cost is
+roughly `3,600 x (warm colos)`. A congregation in one metro stays well inside
+the 10,000/day free tier; an audience spread across three or more colos can
+exhaust it. Raise `LIVE_CHECK_MEMO_SECONDS` or narrow the window if the badge
+starts reporting `api-error` late in a service.
 
 Setup is two **Worker secrets** — Cloudflare dashboard → Workers & Pages →
 `tygerberg-sda-website` → Settings → Variables and Secrets:

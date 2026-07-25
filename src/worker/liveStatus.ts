@@ -48,11 +48,21 @@ export type LiveStatusResult = {
 // Module scope: survives between requests handled by the same isolate, and
 // vanishes when the isolate is recycled. Not a cache to configure or deploy —
 // just a guard so N visitors polling during the service don't become N calls.
+//
+// Note this bounds calls *per isolate*, not globally: Cloudflare runs one per
+// colo, so real-world usage is (polls per window) x (warm colos). See README.
 let memo: { result: LiveStatusResult; expiresAt: number } | null = null;
 
+/** Backoff after a failed call, so an exhausted quota isn't retried per request. */
+const ERROR_MEMO_SECONDS = 60;
+
 function parseMemoSeconds(raw: string | undefined): number {
-  if (raw === undefined) return DEFAULT_MEMO_SECONDS;
-  const parsed = Number(raw);
+  // Empty/whitespace has to be treated as "unset", not as 0 — Number('') is 0,
+  // which would pass the guards below and silently disable the memo. Clearing
+  // the dashboard var to restore the default would otherwise do the opposite.
+  const trimmed = raw?.trim();
+  if (!trimmed) return DEFAULT_MEMO_SECONDS;
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_MEMO_SECONDS;
 }
 
@@ -88,7 +98,7 @@ export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promi
   const timeZone = env.LIVE_CHECK_TZ?.trim() || DEFAULT_TZ;
   const checkedAt = now.toISOString();
 
-  if (!isValidCronWindow(cron, timeZone)) {
+  if (!isValidCronWindow(cron, timeZone, now)) {
     return {
       isLive: false,
       source: 'invalid-schedule',
@@ -109,15 +119,23 @@ export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promi
   }
 
   const memoSeconds = parseMemoSeconds(env.LIVE_CHECK_MEMO_SECONDS);
-  if (memo && memoSeconds > 0 && now.getTime() < memo.expiresAt) {
-    return { ...memo.result, checkedAt, window };
+  if (memo && now.getTime() < memo.expiresAt) {
+    // Error backoff is honoured even at LIVE_CHECK_MEMO_SECONDS=0 — opting out
+    // of memoization shouldn't mean hammering an API that's already failing.
+    if (memoSeconds > 0 || memo.result.source === 'api-error') {
+      return { ...memo.result, checkedAt, window };
+    }
   }
 
   const isLive = await askYouTube(env.YOUTUBE_API_KEY, env.YOUTUBE_CHANNEL_ID);
   if (isLive === null) {
-    // Network hiccup or quota exhaustion — hide the badge rather than guess,
-    // and don't memoize a failure.
-    return { isLive: false, source: 'api-error', checkedAt, window };
+    // Network hiccup or quota exhaustion — hide the badge rather than guess.
+    // Memoized briefly regardless of LIVE_CHECK_MEMO_SECONDS: once quota is
+    // gone every subsequent call fails too, and retrying per request would
+    // add a doomed round-trip to every response for the rest of the window.
+    const result: LiveStatusResult = { isLive: false, source: 'api-error', checkedAt, window };
+    memo = { result, expiresAt: now.getTime() + ERROR_MEMO_SECONDS * 1000 };
+    return result;
   }
 
   const result: LiveStatusResult = { isLive, source: 'youtube-api', checkedAt, window };
