@@ -50,7 +50,7 @@ export function Hero() {
           </div>
           <div className="flex items-center justify-end p-4">
             <a
-              href={SITE.youtubeVideosUrl}
+              href={SITE.youtubeFeaturedUrl}
               target="_blank"
               rel="noopener"
               className="rounded-pill bg-orange px-4.5 py-2 text-[12.5px] font-bold text-white hover:bg-orange-hover"
