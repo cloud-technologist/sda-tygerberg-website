@@ -34,16 +34,22 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
+          # Restores ~/.npm keyed on package-lock.json. See the production
+          # workflow for why node_modules itself is not cached on top.
           node-version-file: '.nvmrc'
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --fund=false
 
       - name: Build (base path = /${{ github.event.repository.name }}/)
         run: npm run build
         env:
           ASTRO_BASE: /${{ github.event.repository.name }}/
+          # No Worker on Pages, so /api/live-status doesn't exist here. Skip
+          # the poll rather than 404 on a loop; the LIVE badge simply never
+          # shows on devtest.
+          PUBLIC_HAS_API: 'false'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

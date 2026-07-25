@@ -9,7 +9,9 @@ export const SITE = {
     'https://www.google.com/maps/dir//Tygerberg+SDA+Kerk,+54+Boston+St,+Boston,+Cape+Town,+7530',
   appleMapsUrl: 'https://maps.apple.com/?address=54%20Boston%20St,%20Boston,%20Cape%20Town,%207530',
   youtubeChannelUrl: 'https://www.youtube.com/@SDATygerberg',
-  youtubeVideosUrl: 'https://www.youtube.com/@SDATygerberg/videos',
+  // Channel home ("Featured"), not /videos — /videos lands on the raw upload
+  // list, which surfaced an old section rather than what the channel curates.
+  youtubeFeaturedUrl: 'https://www.youtube.com/@SDATygerberg/featured',
   // Channel's auto-generated "uploads" playlist — always shows the latest video, zero maintenance.
   // youtube-nocookie.com (privacy-enhanced mode), not youtube.com — the regular
   // embed domain relies on third-party storage access that iOS Safari's tracking

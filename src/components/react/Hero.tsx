@@ -1,10 +1,12 @@
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { SITE } from '../../data/site';
+import { useLiveStatus } from './useLiveStatus';
 
 export function Hero() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
+  const isLive = useLiveStatus();
 
   return (
     <section className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] items-center gap-13 px-7 pb-10 pt-15">
@@ -40,6 +42,12 @@ export function Hero() {
       <div id="stroom" className="scroll-mt-24">
         <div className="overflow-hidden rounded-card-lg bg-navy-deep shadow-deep">
           <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
+            {isLive && (
+              <div className="absolute left-3.5 top-3.5 z-10 flex items-center gap-1.5 rounded-pill bg-orange/95 px-2.5 py-1.5 text-[11px] font-extrabold tracking-[.08em] text-white">
+                <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-white" />
+                {t.liveLabel}
+              </div>
+            )}
             <iframe
               src={SITE.youtubeUploadsEmbedUrl}
               title="Tygerberg SDA YouTube"
@@ -50,7 +58,7 @@ export function Hero() {
           </div>
           <div className="flex items-center justify-end p-4">
             <a
-              href={SITE.youtubeVideosUrl}
+              href={SITE.youtubeFeaturedUrl}
               target="_blank"
               rel="noopener"
               className="rounded-pill bg-orange px-4.5 py-2 text-[12.5px] font-bold text-white hover:bg-orange-hover"

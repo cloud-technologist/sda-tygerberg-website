@@ -1,0 +1,11 @@
+# Copy to `.dev.vars` (gitignored) to exercise the LIVE badge under
+# `npm run worker:dev`. In production these two are Worker *secrets*, set in
+# the Cloudflare dashboard under Workers & Pages -> tygerberg-sda-website ->
+# Settings -> Variables and Secrets. They must never be build-time/Actions
+# variables — that would bake the API key into the public JS bundle.
+YOUTUBE_API_KEY=
+YOUTUBE_CHANNEL_ID=UCtZlioPBBORWMMMSJ9BE1Wg
+
+# Optional local override — widen the window so you can test without waiting
+# for Saturday morning. `* * * * *` means "always open".
+# LIVE_CHECK_CRON=* * * * *
