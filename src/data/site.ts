@@ -11,7 +11,11 @@ export const SITE = {
   youtubeChannelUrl: 'https://www.youtube.com/@SDATygerberg',
   youtubeVideosUrl: 'https://www.youtube.com/@SDATygerberg/videos',
   // Channel's auto-generated "uploads" playlist — always shows the latest video, zero maintenance.
-  youtubeUploadsEmbedUrl: 'https://www.youtube.com/embed/videoseries?list=UUtZlioPBBORWMMMSJ9BE1Wg',
+  // youtube-nocookie.com (privacy-enhanced mode), not youtube.com — the regular
+  // embed domain relies on third-party storage access that iOS Safari's tracking
+  // prevention blocks, leaving a blank black box with nothing rendered. The
+  // nocookie domain doesn't depend on that and loads reliably there.
+  youtubeUploadsEmbedUrl: 'https://www.youtube-nocookie.com/embed/videoseries?list=UUtZlioPBBORWMMMSJ9BE1Wg',
   // Self-hosted so the download works without depending on an external site.
   beliefsPdfPath: '/SDA-28-Fundamental-Beliefs.pdf',
 } as const;
