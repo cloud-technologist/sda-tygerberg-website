@@ -11,16 +11,22 @@ export type LiveStatusEnv = {
   // 5-field cron expression read as a *window* (see cronWindow.ts). YouTube is
   // only called while "now" falls inside it; the other six days of the week
   // cost zero quota. Defaults to the Sabbath morning service.
+  //
+  // The minute field should stay `*`: it decides whether the window is open,
+  // not how often YouTube is polled. Narrowing it (`*\/5`) would close the
+  // window between marks and make the badge blink out. Poll rate is
+  // LIVE_CHECK_MEMO_SECONDS.
   LIVE_CHECK_CRON?: string;
   // IANA timezone the window is evaluated in.
   LIVE_CHECK_TZ?: string;
-  // Seconds to reuse the last YouTube answer across requests within one
-  // isolate. Set to "0" to call YouTube on literally every in-window request.
+  // How often YouTube is actually called while the window is open, in seconds.
+  // One answer is reused across all requests in between, so this is the real
+  // poll interval. "0" calls YouTube on every in-window request.
   LIVE_CHECK_MEMO_SECONDS?: string;
 };
 
-/** Saturdays, 09:00-12:59 — Sabbath School through Divine Service. */
-const DEFAULT_CRON = '* 9-12 * * 6';
+/** Saturdays, 09:00-11:59 — Sabbath School through Divine Service. */
+const DEFAULT_CRON = '* 9-11 * * 6';
 const DEFAULT_TZ = 'Africa/Johannesburg';
 const DEFAULT_MEMO_SECONDS = 300;
 
