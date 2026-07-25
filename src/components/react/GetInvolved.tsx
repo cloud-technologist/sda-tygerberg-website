@@ -18,7 +18,7 @@ export function GetInvolved() {
         <h2 className="mb-10 text-center font-serif text-[34px] font-medium">
           {t.involvedHeading}
         </h2>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-5">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] items-start gap-5">
           <div className={cardClass(false)}>
             <div className="mb-2.5 font-serif text-xl">{t.connectTitle}</div>
             <p className="text-sm leading-relaxed text-blue-pale">{t.connectDesc}</p>
@@ -29,7 +29,7 @@ export function GetInvolved() {
             <p className="text-sm leading-relaxed text-blue-pale">{t.studyDesc}</p>
           </div>
 
-          <div className={cardClass(true)}>
+          <div className={`${cardClass(true)} flex flex-col`}>
             <div className="mb-2.5 font-serif text-xl">{t.giveTitle}</div>
             <p className="mb-4 text-sm leading-relaxed text-blue-pale">{t.giveDesc}</p>
             <button

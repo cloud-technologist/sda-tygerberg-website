@@ -20,7 +20,10 @@ export function BeliefsHeader() {
             </div>
           </div>
         </a>
-        <a href={withBase('/')} className="text-sm font-semibold text-ink hover:text-navy">
+        <a
+          href={withBase('/')}
+          className="inline-block rounded-pill bg-orange px-5.5 py-3 font-semibold text-white hover:bg-orange-hover"
+        >
           ← {t.backHome}
         </a>
         <LanguageToggle />
