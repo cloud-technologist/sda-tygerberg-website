@@ -6,8 +6,6 @@ export const BANKING_DETAILS = {
   bank: 'ABSA',
   accountNumber: '1450750251',
   branchCode: '632005',
-  contactName: 'Adele Meyer',
-  contactPhone: '083 415 2908',
 };
 
 export const givingCopy: Record<
@@ -19,7 +17,6 @@ export const givingCopy: Record<
     branchCodeLabel: string;
     referenceLabel: string;
     referenceNote: string;
-    contactNote: string;
   }
 > = {
   af: {
@@ -29,7 +26,6 @@ export const givingCopy: Record<
     branchCodeLabel: 'Tak kode',
     referenceLabel: 'Verwysing',
     referenceNote: 'Naam en beskrywing (bv. tiende)',
-    contactNote: `Kontak ${BANKING_DETAILS.contactName} by ${BANKING_DETAILS.contactPhone} vir enige navrae.`,
   },
   en: {
     accountDetailsLabel: 'Banking Details',
@@ -38,6 +34,5 @@ export const givingCopy: Record<
     branchCodeLabel: 'Branch Code',
     referenceLabel: 'Reference',
     referenceNote: 'Name and description (e.g. tithe)',
-    contactNote: `Contact ${BANKING_DETAILS.contactName} at ${BANKING_DETAILS.contactPhone} with any questions.`,
   },
 };

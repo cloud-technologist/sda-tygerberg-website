@@ -22,9 +22,6 @@ export function Footer() {
             {t.footerVisit}
           </div>
           <p className="mb-1 text-sm">{SITE.address}</p>
-          <a href={`mailto:${SITE.contactEmail}`} className="text-sm text-orange hover:text-white">
-            {SITE.contactEmail}
-          </a>
         </div>
         <div>
           <div className="mb-2 text-xs font-bold uppercase tracking-[.08em] text-blue-muted">
