@@ -23,8 +23,8 @@ export const resources: Resource[] = [
   },
   {
     name: { af: 'AWR Afrikaans', en: 'AWR Afrikaans' },
-    domain: 'awr.org',
-    url: 'https://awr.org/',
+    domain: 'awrafrikaans.org',
+    url: 'https://awrafrikaans.org/',
     logo: '/logos/awr.png',
   },
 ];
