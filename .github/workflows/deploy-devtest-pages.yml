@@ -44,6 +44,10 @@ jobs:
         run: npm run build
         env:
           ASTRO_BASE: /${{ github.event.repository.name }}/
+          # No Worker on Pages, so /api/live-status doesn't exist here. Skip
+          # the poll rather than 404 on a loop; the LIVE badge simply never
+          # shows on devtest.
+          PUBLIC_HAS_API: 'false'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

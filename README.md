@@ -31,6 +31,10 @@ the site through Wrangler instead:
 npm run worker:dev                # builds, then wrangler dev
 ```
 
+To exercise the LIVE badge locally, copy `.dev.vars.example` to `.dev.vars`
+(gitignored) and fill in a YouTube API key. Widening `LIVE_CHECK_CRON` to
+`* * * * *` there saves waiting until Saturday morning to see it work.
+
 ## Deployment (Cloudflare Workers)
 
 ```sh
@@ -39,14 +43,78 @@ npm run deploy     # astro build && wrangler deploy
 
 This deploys the static site plus the Worker in `src/worker/` (configured in
 `wrangler.jsonc`) under a single Cloudflare Workers project — static assets
-are served via the `ASSETS` binding. `src/worker/index.ts` is currently a
-thin passthrough with no active routes; it's the natural place to add a
-future API layer (contact form, CMS-backed schedule data, etc.).
+are served via the `ASSETS` binding. `src/worker/index.ts` serves one API
+route (`/api/live-status`, below) and is the natural place to add more
+(contact form, CMS-backed schedule data, etc.).
 
 The homepage video always embeds the channel's auto-generated "uploads"
 playlist (`SITE.youtubeUploadsEmbedUrl` in `src/data/site.ts`), which YouTube
 keeps in newest-first order with zero maintenance and no API key/secrets
-required — no live-detection polling is needed to show the latest video.
+required. **Which video plays never depends on the API key** — that's only
+for the LIVE badge.
+
+## LIVE badge
+
+A small pulsing "LIVE"/"LEWENDIG" pill appears over the video while the
+channel is actually streaming. It's cosmetic: every failure path resolves to
+"not live" and hides the badge, and the video embed works regardless.
+
+`/api/live-status` answers the question, and only spends YouTube API quota
+inside a configured window. `search.list` costs **100 quota units** against a
+10,000/day default, so an ungated per-request check would burn a full day's
+quota in about 100 page views. Two things prevent that:
+
+1. **The window.** `LIVE_CHECK_CRON` is a standard 5-field cron expression
+   read as a *window* rather than a schedule, evaluated in `LIVE_CHECK_TZ`.
+   The default `* 6-11 * * 6` means "any minute from 06:00 to 11:59 on
+   Saturdays", closing at 12:00. Outside it the Worker returns
+   `outside-window` without calling YouTube at all, so six days a week the
+   badge costs nothing. Change the window by editing the `vars` block in
+   `wrangler.jsonc` and redeploying; no code change needed.
+
+   Day-of-week `6` is Saturday — cron counts from `0` = Sunday, so writing
+   `7` for "the seventh day" would select Sunday instead.
+
+   Note the window closes at 12:00 while `SERVICE_TIMES` puts Divine Service
+   at 11:00, so a service running past noon loses the badge for its last
+   stretch. Widen the hour field (`6-13`) if that matters.
+2. **The poll interval.** The client checks every 5 minutes
+   (`POLL_INTERVAL_MS` in `src/components/react/useLiveStatus.ts`) — one
+   cadence whether the window is open, closed, or the last check failed. A
+   failed check never ends the loop, so the badge recovers on its own once
+   the Worker or the API comes back.
+
+**Keep the cron's minute field `*`.** It decides whether the window is *open*,
+not how often YouTube is polled. Writing `*/5 9-11 * * 6` to mean "poll every
+5 minutes" would instead close the window for the four minutes between each
+mark, and the badge would blink off and on for viewers.
+
+**There is no server-side caching**, by design — every in-window request is a
+live call to YouTube. Cost therefore scales with concurrent viewers, not with
+time: one viewer across a 3-hour window is 36 polls (3,600 units), two is
+7,200, and three exceeds the 10,000/day free tier. If the badge starts
+reporting `api-error` late in a service, that's the quota, and the levers are
+a narrower window, a longer `POLL_INTERVAL_MS`, or a raised quota.
+
+Setup is two **Worker secrets** — Cloudflare dashboard → Workers & Pages →
+`tygerberg-sda-website` → Settings → Variables and Secrets:
+
+| Secret | Value |
+|---|---|
+| `YOUTUBE_API_KEY` | A Google Cloud API key with **YouTube Data API v3** enabled |
+| `YOUTUBE_CHANNEL_ID` | `UCtZlioPBBORWMMMSJ9BE1Wg` |
+
+These must be **Worker secrets, not GitHub Actions secrets**. Actions secrets
+exist only at build time and would never reach the Worker; worse, exposing
+the key to the client build would publish it to anyone viewing source. Until
+both are set the endpoint reports `not-configured` and the badge stays hidden.
+
+`curl https://tygerberg-sda.cloudkid.link/api/live-status` echoes back the
+resolved window and a `source` field (`youtube-api`, `outside-window`,
+`not-configured`, `invalid-schedule`, `api-error`), which is usually enough
+to diagnose a badge that isn't behaving. A malformed cron or unknown
+timezone fails *closed* — `invalid-schedule`, zero API calls — so a typo
+costs nothing rather than quietly spending quota.
 
 ## Branch strategy
 
@@ -65,7 +133,7 @@ Two independent workflows under `.github/workflows/`:
 
 | Workflow | Target | Trigger | Notes |
 |---|---|---|---|
-| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath. |
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath, and `PUBLIC_HAS_API=false` so the LIVE badge doesn't poll a Worker route that doesn't exist here. |
 | `deploy-production-cloudflare.yml` | Cloudflare Workers | push to `main`, or manual | The real site, full Worker + `/api/*`. Gated by the `dev` -> `main` promotion PR described above; manual dispatch is available for a re-deploy without a new merge. |
 
 One-time setup:
@@ -114,5 +182,8 @@ original handoff and are **not** blockers for this MVP:
 3. **Weekly ministry schedule** — currently 4 fixed entries in
    `homeCopy.ts`; move to a CMS/KV-backed endpoint if it starts changing
    seasonally (the Worker is already the natural place to add that route).
-4. ~~**Mobile hamburger nav**~~ — resolved: below the `lg` breakpoint the
+4. **LIVE badge credentials** — the badge is built and deployed, but stays
+   hidden until `YOUTUBE_API_KEY` and `YOUTUBE_CHANNEL_ID` are set as Worker
+   secrets (see "LIVE badge" above). Nothing else depends on them.
+5. ~~**Mobile hamburger nav**~~ — resolved: below the `lg` breakpoint the
    header nav collapses behind a hamburger button (`src/components/react/Header.tsx`).
