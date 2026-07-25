@@ -37,6 +37,8 @@ export type HomeCopy = {
   giveTitle: string;
   giveDesc: string;
   giveCta: string;
+  connectCta: string;
+  studyCta: string;
   resourcesHeading: string;
   resourcesSub: string;
   resLesson: string;
@@ -104,6 +106,8 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     giveTitle: 'Skenk',
     giveDesc: 'Ondersteun die bediening met jou tiendes en gawes via EFT.',
     giveCta: 'Bankbesonderhede',
+    connectCta: 'Kontak ons',
+    studyCta: 'Vra studie aan',
     resourcesHeading: 'Voed jou geloof daagliks',
     resourcesSub: 'Amptelike Adventiste hulpbronne vir studie en aanbidding.',
     resLesson: 'Lesstudie Biblioteek',
@@ -168,6 +172,8 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     giveTitle: 'Give',
     giveDesc: 'Support the ministry with your tithe and offerings via EFT.',
     giveCta: 'Banking details',
+    connectCta: 'Contact us',
+    studyCta: 'Request study',
     resourcesHeading: 'Feed your faith daily',
     resourcesSub: 'Official Adventist resources for study and worship.',
     resLesson: 'Lesson Study Library',
