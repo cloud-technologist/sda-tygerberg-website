@@ -24,11 +24,10 @@ npm install
 npm run dev       # Astro dev server, http://localhost:4321
 ```
 
-To exercise the `/api/*` routes locally (not available under plain `astro dev`),
-run the site through Wrangler instead:
+To test the Worker locally (static asset serving, same as production), run
+the site through Wrangler instead:
 
 ```sh
-cp .dev.vars.example .dev.vars   # fill in YOUTUBE_API_KEY / YOUTUBE_CHANNEL_ID if you have them
 npm run worker:dev                # builds, then wrangler dev
 ```
 
@@ -40,35 +39,14 @@ npm run deploy     # astro build && wrangler deploy
 
 This deploys the static site plus the Worker in `src/worker/` (configured in
 `wrangler.jsonc`) under a single Cloudflare Workers project — static assets
-are served via the `ASSETS` binding, and `/api/*` requests are handled by the
-Worker.
+are served via the `ASSETS` binding. `src/worker/index.ts` is currently a
+thin passthrough with no active routes; it's the natural place to add a
+future API layer (contact form, CMS-backed schedule data, etc.).
 
-To wire up real YouTube live-stream detection in production:
-
-```sh
-wrangler secret put YOUTUBE_API_KEY
-wrangler secret put YOUTUBE_CHANNEL_ID
-```
-
-Without these set, `/api/live-status` falls back to the `MANUAL_LIVE_FLAG` var
-in `wrangler.jsonc` (default `false`). Either way, the stream box always
-embeds the channel's uploads playlist, so "latest video by default" works
-with zero maintenance regardless of live status.
-
-### Scheduled polling (optional)
-
-By default `/api/live-status` checks YouTube directly on each request. To
-instead poll on a schedule and cache the result in KV (cheaper, avoids
-hitting the YouTube API quota on every page load):
-
-```sh
-wrangler kv namespace create LIVE_STATUS_KV
-```
-
-then uncomment the `kv_namespaces` and `triggers.crons` blocks at the bottom
-of `wrangler.jsonc` and paste in the namespace id it prints. The worker code
-already supports both modes (`src/worker/liveStatus.ts`) — this is purely a
-config toggle, no code changes needed.
+The homepage video always embeds the channel's auto-generated "uploads"
+playlist (`SITE.youtubeUploadsEmbedUrl` in `src/data/site.ts`), which YouTube
+keeps in newest-first order with zero maintenance and no API key/secrets
+required — no live-detection polling is needed to show the latest video.
 
 ## Branch strategy
 
@@ -87,7 +65,7 @@ Two independent workflows under `.github/workflows/`:
 
 | Workflow | Target | Trigger | Notes |
 |---|---|---|---|
-| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` and `PUBLIC_HAS_API=false` since Pages project sites serve from a subpath and have no `/api/*` (that needs the Worker) — the live-status poll is skipped entirely at build time rather than hitting an endpoint that would always 404, and the badge just stays off. |
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath. |
 | `deploy-production-cloudflare.yml` | Cloudflare Workers | push to `main`, or manual | The real site, full Worker + `/api/*`. Gated by the `dev` -> `main` promotion PR described above; manual dispatch is available for a re-deploy without a new merge. |
 
 One-time setup:
@@ -111,7 +89,7 @@ components:
 
 | File | What it holds |
 |---|---|
-| `src/data/site.ts` | Address, map coordinates, external links, manual live flag |
+| `src/data/site.ts` | Address, map coordinates, external links |
 | `src/data/homeCopy.ts` | Homepage bilingual copy + weekly ministry schedule |
 | `src/data/beliefsCopy.ts` | Beliefs-page header copy |
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
@@ -127,17 +105,14 @@ original handoff and are **not** blockers for this MVP:
 1. **Department head names + photos** — placeholders (`[Naam 1]`…`[Naam 6]`)
    in `src/data/departmentHeads.ts`; swap in real `name`/`photoUrl` per person
    once supplied.
-2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies link
-   to `mailto:sdatygerbergkerk@gmail.com` (with a pre-filled subject), and
-   Give shows real EFT banking details (`src/data/giving.ts`) in an
-   expandable panel. The contact email is also on the Visit card and footer.
-   Still open: a dedicated form or per-ministry routing if the board wants
-   something more structured than a shared inbox later.
-3. **Live-stream detection** — `/api/live-status` (see `src/worker/`) is
-   wired for the YouTube Data API but needs a `YOUTUBE_API_KEY` +
-   `YOUTUBE_CHANNEL_ID` to use it; otherwise it's a manual flag.
-4. **Weekly ministry schedule** — currently 4 fixed entries in
+2. **"Get involved" contacts** — Connect, Bible Studies, and the banking
+   contact line were removed for POPIA compliance (see `src/data/giving.ts`,
+   `GetInvolved.tsx`). Give still shows real EFT banking details
+   (`src/data/giving.ts`) in an expandable panel. Needs a compliant contact
+   mechanism (form with consent, dedicated inbox, etc.) before Connect/Bible
+   Studies/a contact channel can be restored.
+3. **Weekly ministry schedule** — currently 4 fixed entries in
    `homeCopy.ts`; move to a CMS/KV-backed endpoint if it starts changing
    seasonally (the Worker is already the natural place to add that route).
-5. ~~**Mobile hamburger nav**~~ — resolved: below the `lg` breakpoint the
+4. ~~**Mobile hamburger nav**~~ — resolved: below the `lg` breakpoint the
    header nav collapses behind a hamburger button (`src/components/react/Header.tsx`).

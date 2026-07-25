@@ -1,31 +1,17 @@
 /// <reference types="@cloudflare/workers-types" />
 
-import { getLiveStatus, pollAndCacheLiveStatus, type Env } from './liveStatus';
+export type Env = {
+  ASSETS: Fetcher;
+};
 
 /**
- * Thin API layer in front of the static Astro build. Static assets are served
- * as-is via the ASSETS binding; anything under /api/* is handled here. Add
- * future routes (contact form, CMS-backed schedule/department data, etc.) as
- * additional branches below, or split into src/worker/routes/* as they grow.
+ * Thin passthrough in front of the static Astro build, serving assets via
+ * the ASSETS binding. Add future API routes (contact form, CMS-backed
+ * schedule/department data, etc.) as branches here, or split into
+ * src/worker/routes/* as they grow.
  */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-
-    if (url.pathname === '/api/live-status') {
-      const status = await getLiveStatus(env);
-      return Response.json(status, {
-        headers: { 'Cache-Control': 'public, max-age=60' },
-      });
-    }
-
     return env.ASSETS.fetch(request);
-  },
-
-  // Fires on the schedule configured in wrangler.jsonc's `triggers.crons`
-  // (disabled by default — see README for opt-in setup). Polls YouTube and
-  // caches the result in KV so /api/live-status stays a cheap read.
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(pollAndCacheLiveStatus(env));
   },
 };

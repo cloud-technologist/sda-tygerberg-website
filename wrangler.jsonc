@@ -7,11 +7,6 @@
     "directory": "./dist",
     "binding": "ASSETS"
   },
-  "vars": {
-    // MVP default: no live-stream badge until the church board wires up a
-    // YOUTUBE_API_KEY + YOUTUBE_CHANNEL_ID secret, or flips this manually.
-    "MANUAL_LIVE_FLAG": "false"
-  },
   "observability": {
     "enabled": true
   },
@@ -20,19 +15,4 @@
     // account) — `wrangler deploy` provisions/attaches this automatically.
     { "pattern": "tygerberg-sda.cloudkid.link", "custom_domain": true }
   ]
-
-  // --- Optional: scheduled YouTube live-status polling (see README) ---
-  // Uncomment once you've created the KV namespace (`wrangler kv namespace
-  // create LIVE_STATUS_KV`) and set YOUTUBE_API_KEY / YOUTUBE_CHANNEL_ID via
-  // `wrangler secret put`. Without this, /api/live-status still works — it
-  // just checks YouTube directly on each request instead of reading a cache.
-  //
-  // "kv_namespaces": [
-  //   { "binding": "LIVE_STATUS_KV", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }
-  // ],
-  // "triggers": {
-  //   // Every 15 min: ~96 calls/day x 100 quota units (search.list) = 9,600,
-  //   // just under the default 10,000/day YouTube Data API quota.
-  //   "crons": ["*/15 * * * *"]
-  // }
 }

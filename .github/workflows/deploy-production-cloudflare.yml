@@ -6,10 +6,6 @@ name: Deploy production (Cloudflare)
 #   CLOUDFLARE_API_TOKEN   (Workers Scripts + Account Settings: Read/Edit)
 #   CLOUDFLARE_ACCOUNT_ID
 # Set via Settings -> Secrets and variables -> Actions.
-#
-# Optional YouTube live-status polling (KV + cron) is opt-in and configured
-# separately in wrangler.jsonc — see README. This workflow deploys whatever
-# wrangler.jsonc currently has enabled.
 on:
   push:
     branches: [main]

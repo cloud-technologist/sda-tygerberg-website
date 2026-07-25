@@ -14,10 +14,6 @@ export const SITE = {
   youtubeUploadsEmbedUrl: 'https://www.youtube.com/embed/videoseries?list=UUtZlioPBBORWMMMSJ9BE1Wg',
   // Self-hosted so the download works without depending on an external site.
   beliefsPdfPath: '/SDA-28-Fundamental-Beliefs.pdf',
-  // Manual live-stream flag for MVP — no backend/YouTube Data API key wired up yet.
-  // Flip to true when the church is actively streaming; the video area otherwise
-  // always falls back to the uploads-playlist embed above.
-  isLive: false,
 } as const;
 
 export const SERVICE_TIMES: { af: string; en: string; time: string }[] = [
