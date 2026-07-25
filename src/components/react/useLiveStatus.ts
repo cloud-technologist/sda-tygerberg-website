@@ -2,10 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * Polls the Worker's /api/live-status route to decide whether to show the
- * LIVE badge. Only available when running via `wrangler dev` or deployed —
- * plain `astro dev` and the static GitHub Pages build have no Worker, so
- * PUBLIC_HAS_API=false skips the request entirely rather than polling an
- * endpoint that will always 404.
+ * LIVE badge. The route only exists under `wrangler dev` or a real deploy.
+ *
+ * The GitHub Pages build sets PUBLIC_HAS_API=false to skip polling entirely,
+ * since that deploy has no Worker and the route would 404 forever. Under
+ * plain `astro dev` the var is unset, so the hook *does* poll and each
+ * request 404s — harmless (the badge just stays hidden) and left deliberately
+ * rather than stopping on 404: a 404 in production means a bad deploy or a
+ * mid-deploy blip, and the badge has to recover once that resolves. Use
+ * `npm run worker:dev` to exercise the route locally.
  *
  * Every failure mode resolves to "not live": the badge is decorative, and the
  * video embed below it works regardless.
