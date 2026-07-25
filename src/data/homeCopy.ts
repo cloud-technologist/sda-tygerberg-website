@@ -16,7 +16,6 @@ export type HomeCopy = {
   heroSub: string;
   ctaVisit: string;
   ctaWatch: string;
-  liveLabel: string;
   tabReplay: string;
   timesLabel: string;
   week: WeekEntry[];
@@ -71,7 +70,6 @@ export const homeCopy: Record<Lang, HomeCopy> = {
       'Sluit elke Sabbat by ons aan in Boston, Kaapstad — of kyk lewendig van waar jy ook al is.',
     ctaVisit: "Beplan 'n Besoek",
     ctaWatch: 'Kyk Lewendig',
-    liveLabel: 'LEWENDIG',
     tabReplay: 'Onlangse Diens',
     timesLabel: 'Sabbatdienste',
     week: [
@@ -135,7 +133,6 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     heroSub: 'Join us every Sabbath in Boston, Cape Town — or watch live from wherever you are.',
     ctaVisit: 'Plan a Visit',
     ctaWatch: 'Watch Live',
-    liveLabel: 'LIVE',
     tabReplay: 'Latest Service',
     timesLabel: 'Sabbath Services',
     week: [
