@@ -10,6 +10,18 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    // When the LIVE badge is allowed to cost YouTube API quota, as a 5-field
+    // cron expression read as a *window* (minute hour day-of-month month
+    // day-of-week). Default: Saturdays 09:00-12:59, i.e. Sabbath School
+    // through Divine Service. Outside this window no API call is made at all.
+    "LIVE_CHECK_CRON": "* 9-12 * * 6",
+    "LIVE_CHECK_TZ": "Africa/Johannesburg",
+    // Seconds one YouTube answer is reused across requests in the same
+    // isolate. "0" calls YouTube on every in-window request — see README for
+    // the quota maths before setting that.
+    "LIVE_CHECK_MEMO_SECONDS": "300"
+  },
   "routes": [
     // Production custom domain (zone already lives in the Cloudflare
     // account) — `wrangler deploy` provisions/attaches this automatically.
