@@ -13,20 +13,16 @@
   "vars": {
     // When the LIVE badge is allowed to cost YouTube API quota, as a 5-field
     // cron expression read as a *window* (minute hour day-of-month month
-    // day-of-week). Saturdays 09:00-11:59 SAST — Sabbath School through
-    // Divine Service. Outside it no API call is made at all.
+    // day-of-week). Saturdays 06:00-11:59 SAST, closing at 12:00. Note cron
+    // day-of-week 6 is Saturday (0 = Sunday); writing 7 would mean Sunday.
+    // Outside the window no API call is made at all.
     //
     // Keep the minute field `*`. It controls whether the window is OPEN, not
     // how often YouTube is polled — narrowing it to `*\/5` would make the
-    // badge vanish for the four minutes between each mark. Poll rate is
-    // LIVE_CHECK_MEMO_SECONDS below.
-    "LIVE_CHECK_CRON": "* 9-11 * * 6",
-    "LIVE_CHECK_TZ": "Africa/Johannesburg",
-    // How often YouTube is actually called while the window is open, in
-    // seconds — one answer is reused across every request in between. 300 =
-    // one poll every 5 minutes. "0" calls YouTube on every single request;
-    // see the README quota maths before doing that.
-    "LIVE_CHECK_MEMO_SECONDS": "300"
+    // badge vanish for the four minutes between each mark. Poll rate lives on
+    // the client, in useLiveStatus.ts (every 5 minutes).
+    "LIVE_CHECK_CRON": "* 6-11 * * 6",
+    "LIVE_CHECK_TZ": "Africa/Johannesburg"
   },
   "routes": [
     // Production custom domain (zone already lives in the Cloudflare

@@ -14,21 +14,16 @@ export type LiveStatusEnv = {
   //
   // The minute field should stay `*`: it decides whether the window is open,
   // not how often YouTube is polled. Narrowing it (`*\/5`) would close the
-  // window between marks and make the badge blink out. Poll rate is
-  // LIVE_CHECK_MEMO_SECONDS.
+  // window between marks and make the badge blink out. Poll rate is set on the
+  // client (see useLiveStatus.ts).
   LIVE_CHECK_CRON?: string;
   // IANA timezone the window is evaluated in.
   LIVE_CHECK_TZ?: string;
-  // How often YouTube is actually called while the window is open, in seconds.
-  // One answer is reused across all requests in between, so this is the real
-  // poll interval. "0" calls YouTube on every in-window request.
-  LIVE_CHECK_MEMO_SECONDS?: string;
 };
 
-/** Saturdays, 09:00-11:59 — Sabbath School through Divine Service. */
-const DEFAULT_CRON = '* 9-11 * * 6';
+/** Saturdays (cron day-of-week 6), 06:00-11:59 — window closes at 12:00. */
+const DEFAULT_CRON = '* 6-11 * * 6';
 const DEFAULT_TZ = 'Africa/Johannesburg';
-const DEFAULT_MEMO_SECONDS = 300;
 
 export type LiveStatusSource =
   | 'youtube-api'
@@ -44,27 +39,6 @@ export type LiveStatusResult = {
   /** The window this was evaluated against, echoed back to make config mistakes obvious. */
   window: { cron: string; timeZone: string; open: boolean };
 };
-
-// Module scope: survives between requests handled by the same isolate, and
-// vanishes when the isolate is recycled. Not a cache to configure or deploy —
-// just a guard so N visitors polling during the service don't become N calls.
-//
-// Note this bounds calls *per isolate*, not globally: Cloudflare runs one per
-// colo, so real-world usage is (polls per window) x (warm colos). See README.
-let memo: { result: LiveStatusResult; expiresAt: number } | null = null;
-
-/** Backoff after a failed call, so an exhausted quota isn't retried per request. */
-const ERROR_MEMO_SECONDS = 60;
-
-function parseMemoSeconds(raw: string | undefined): number {
-  // Empty/whitespace has to be treated as "unset", not as 0 — Number('') is 0,
-  // which would pass the guards below and silently disable the memo. Clearing
-  // the dashboard var to restore the default would otherwise do the opposite.
-  const trimmed = raw?.trim();
-  if (!trimmed) return DEFAULT_MEMO_SECONDS;
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_MEMO_SECONDS;
-}
 
 async function askYouTube(apiKey: string, channelId: string): Promise<boolean | null> {
   const url = new URL('https://www.googleapis.com/youtube/v3/search');
@@ -88,10 +62,9 @@ async function askYouTube(apiKey: string, channelId: string): Promise<boolean | 
  * Resolves whether the channel is currently streaming, spending YouTube API
  * quota only inside the configured window.
  *
- * `search.list` costs 100 quota units against a 10,000/day default, so an
- * ungated per-request check would exhaust a day's quota in ~100 page views.
- * Gating on the service window plus the short in-isolate memo keeps a normal
- * Sabbath morning comfortably inside the free tier.
+ * No server-side caching: every in-window request is a live call to YouTube.
+ * `search.list` costs 100 quota units against a 10,000/day default, so cost
+ * scales with concurrent viewers — see the README quota note.
  */
 export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promise<LiveStatusResult> {
   const cron = env.LIVE_CHECK_CRON?.trim() || DEFAULT_CRON;
@@ -118,29 +91,12 @@ export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promi
     return { isLive: false, source: 'not-configured', checkedAt, window };
   }
 
-  const memoSeconds = parseMemoSeconds(env.LIVE_CHECK_MEMO_SECONDS);
-  if (memo && now.getTime() < memo.expiresAt) {
-    // Error backoff is honoured even at LIVE_CHECK_MEMO_SECONDS=0 — opting out
-    // of memoization shouldn't mean hammering an API that's already failing.
-    if (memoSeconds > 0 || memo.result.source === 'api-error') {
-      return { ...memo.result, checkedAt, window };
-    }
-  }
-
   const isLive = await askYouTube(env.YOUTUBE_API_KEY, env.YOUTUBE_CHANNEL_ID);
   if (isLive === null) {
     // Network hiccup or quota exhaustion — hide the badge rather than guess.
-    // Memoized briefly regardless of LIVE_CHECK_MEMO_SECONDS: once quota is
-    // gone every subsequent call fails too, and retrying per request would
-    // add a doomed round-trip to every response for the rest of the window.
-    const result: LiveStatusResult = { isLive: false, source: 'api-error', checkedAt, window };
-    memo = { result, expiresAt: now.getTime() + ERROR_MEMO_SECONDS * 1000 };
-    return result;
+    // The client keeps polling on its normal cadence and recovers on its own.
+    return { isLive: false, source: 'api-error', checkedAt, window };
   }
 
-  const result: LiveStatusResult = { isLive, source: 'youtube-api', checkedAt, window };
-  if (memoSeconds > 0) {
-    memo = { result, expiresAt: now.getTime() + memoSeconds * 1000 };
-  }
-  return result;
+  return { isLive, source: 'youtube-api', checkedAt, window };
 }

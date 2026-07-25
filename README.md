@@ -66,37 +66,35 @@ quota in about 100 page views. Two things prevent that:
 
 1. **The window.** `LIVE_CHECK_CRON` is a standard 5-field cron expression
    read as a *window* rather than a schedule, evaluated in `LIVE_CHECK_TZ`.
-   The default `* 9-11 * * 6` means "any minute from 09:00 to 11:59 on
-   Saturdays". Outside it the Worker returns `outside-window` without calling
-   YouTube at all, so six days a week the badge costs nothing. Change the
-   window by editing the `vars` block in `wrangler.jsonc` and redeploying; no
-   code change needed.
+   The default `* 6-11 * * 6` means "any minute from 06:00 to 11:59 on
+   Saturdays", closing at 12:00. Outside it the Worker returns
+   `outside-window` without calling YouTube at all, so six days a week the
+   badge costs nothing. Change the window by editing the `vars` block in
+   `wrangler.jsonc` and redeploying; no code change needed.
 
-   **Note this closes at 12:00, while `SERVICE_TIMES` puts Divine Service at
-   11:00.** If a service runs past noon the badge goes dark mid-broadcast, and
-   because the client backs off to a 15-minute cadence once the window shuts,
-   it won't come back that morning. Widen the hour field (`9-13`) if that
-   matters.
-2. **The poll interval.** `LIVE_CHECK_MEMO_SECONDS` (default `300`, i.e. one
-   poll every 5 minutes) is how often YouTube is actually called while the
-   window is open — one answer is reused across every request in between, so
-   a congregation refreshing during the service doesn't become one API call
-   per visitor. It's a module-scope variable, not KV — nothing to provision.
-   Set it to `0` to call YouTube on every in-window request.
+   Day-of-week `6` is Saturday — cron counts from `0` = Sunday, so writing
+   `7` for "the seventh day" would select Sunday instead.
+
+   Note the window closes at 12:00 while `SERVICE_TIMES` puts Divine Service
+   at 11:00, so a service running past noon loses the badge for its last
+   stretch. Widen the hour field (`6-13`) if that matters.
+2. **The poll interval.** The client checks every 5 minutes
+   (`POLL_INTERVAL_MS` in `src/components/react/useLiveStatus.ts`) — one
+   cadence whether the window is open, closed, or the last check failed. A
+   failed check never ends the loop, so the badge recovers on its own once
+   the Worker or the API comes back.
 
 **Keep the cron's minute field `*`.** It decides whether the window is *open*,
-not how often YouTube is polled — those are the two separate knobs above.
-Writing `*/5 9-11 * * 6` to mean "poll every 5 minutes" would instead close
-the window for the four minutes between each mark, and the badge would blink
-off and on for viewers. Set the poll rate with `LIVE_CHECK_MEMO_SECONDS`.
+not how often YouTube is polled. Writing `*/5 9-11 * * 6` to mean "poll every
+5 minutes" would instead close the window for the four minutes between each
+mark, and the badge would blink off and on for viewers.
 
-Budgeting: a 3-hour window at one poll per 5 minutes is 36 polls, or 3,600
-quota units. **That figure is per isolate, not global** — the memo is
-module-scope, and Cloudflare runs an isolate per colo, so the real cost is
-roughly `3,600 x (warm colos)`. A congregation in one metro stays well inside
-the 10,000/day free tier; an audience spread across three or more colos can
-exhaust it. Raise `LIVE_CHECK_MEMO_SECONDS` or narrow the window if the badge
-starts reporting `api-error` late in a service.
+**There is no server-side caching**, by design — every in-window request is a
+live call to YouTube. Cost therefore scales with concurrent viewers, not with
+time: one viewer across a 3-hour window is 36 polls (3,600 units), two is
+7,200, and three exceeds the 10,000/day free tier. If the badge starts
+reporting `api-error` late in a service, that's the quota, and the levers are
+a narrower window, a longer `POLL_INTERVAL_MS`, or a raised quota.
 
 Setup is two **Worker secrets** — Cloudflare dashboard → Workers & Pages →
 `tygerberg-sda-website` → Settings → Variables and Secrets:
