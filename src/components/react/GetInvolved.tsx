@@ -2,11 +2,6 @@ import { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { BANKING_DETAILS, givingCopy } from '../../data/giving';
-import { SITE } from '../../data/site';
-
-function mailto(subject: string): string {
-  return `mailto:${SITE.contactEmail}?subject=${encodeURIComponent(subject)}`;
-}
 
 export function GetInvolved() {
   const { lang } = useLanguage();
@@ -26,24 +21,12 @@ export function GetInvolved() {
         <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-5">
           <div className={cardClass(false)}>
             <div className="mb-2.5 font-serif text-xl">{t.connectTitle}</div>
-            <p className="mb-4 text-sm leading-relaxed text-blue-pale">{t.connectDesc}</p>
-            <a
-              href={mailto(t.connectEmailSubject)}
-              className="inline-flex items-center gap-1.5 rounded-pill bg-orange px-4 py-2 text-[13px] font-bold text-white hover:bg-orange-hover"
-            >
-              {t.connectCta} →
-            </a>
+            <p className="text-sm leading-relaxed text-blue-pale">{t.connectDesc}</p>
           </div>
 
           <div className={cardClass(false)}>
             <div className="mb-2.5 font-serif text-xl">{t.studyTitle}</div>
-            <p className="mb-4 text-sm leading-relaxed text-blue-pale">{t.studyDesc}</p>
-            <a
-              href={mailto(t.studyEmailSubject)}
-              className="inline-flex items-center gap-1.5 rounded-pill bg-orange px-4 py-2 text-[13px] font-bold text-white hover:bg-orange-hover"
-            >
-              {t.studyCta} →
-            </a>
+            <p className="text-sm leading-relaxed text-blue-pale">{t.studyDesc}</p>
           </div>
 
           <div className={cardClass(true)}>
@@ -75,7 +58,6 @@ export function GetInvolved() {
                   <dt className="text-blue-muted">{g.referenceLabel}</dt>
                   <dd>{g.referenceNote}</dd>
                 </dl>
-                <p className="text-xs text-blue-muted">{g.contactNote}</p>
               </div>
             )}
           </div>
