@@ -150,10 +150,7 @@ export async function handleContact(request: Request, env: ContactEnv): Promise<
 
   // Bot filtering is Cloudflare's job, not this handler's — Bot Fight Mode and
   // the WAF rate-limiting rule sit in front of this route at the edge (see
-  // SETUP-INSTRUCTIONS.md §3.5). A hidden honeypot field used to live here; it
-  // was removed because a password manager filling it would silently bin a
-  // real person's message, and it never stopped a bot that simply omitted the
-  // field anyway.
+  // SETUP-INSTRUCTIONS.md §3.5).
   const { errors, clean } = validate(body);
   if (!clean) return json({ ok: false, outcome: 'invalid', errors }, 400);
 

@@ -154,12 +154,10 @@ crafted request can't skip it. The forwarded payload records `consent` and
 the church's inbox is the only place the submission survives. The privacy
 wording shown to visitors lives in `src/data/requestCopy.ts`.
 
-**Spam filtering is Cloudflare's, not the app's.** There is deliberately no
-honeypot or in-Worker filtering: Bot Fight Mode and a WAF rate-limiting rule
-sit in front of `/api/contact` at the edge, where they see the whole request
-and cost nothing to run. An earlier hidden-field honeypot was removed because
-a password manager filling it would silently bin a real person's message,
-and it never stopped a bot that simply omitted the field.
+**Spam filtering is Cloudflare's, not the app's.** The Worker validates and
+forwards; it does no bot detection of its own. Bot Fight Mode and a WAF
+rate-limiting rule sit in front of `/api/contact` at the edge, where they see
+the whole request and cost nothing to run.
 
 > Those two settings are **not on by default**, and they only apply on a
 > custom domain — a `*.workers.dev` URL gets no zone-level protection. Until
