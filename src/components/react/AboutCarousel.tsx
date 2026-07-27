@@ -79,7 +79,7 @@ export function AboutCarousel() {
           >
             {departmentHeads.map((head) => (
               <div
-                key={head.name}
+                key={head.id}
                 data-card
                 className="w-[72%] flex-none snap-start overflow-hidden rounded-card bg-cream-card sm:w-[45%] lg:w-[31%]"
               >
@@ -101,7 +101,18 @@ export function AboutCarousel() {
                 </div>
                 <div className="p-4 text-center">
                   <div className="font-serif text-lg text-navy">{head.name}</div>
-                  <div className="text-sm text-slate">{head.dept[lang]}</div>
+                  {/* Stacked rather than joined: someone heading three
+                      departments would otherwise wrap into an unreadable run. */}
+                  <div className="mt-0.5 text-sm leading-snug text-slate">
+                    {head.roles[lang].map((role) => (
+                      <div key={role}>{role}</div>
+                    ))}
+                  </div>
+                  {head.note && (
+                    <div className="mt-2 text-xs leading-snug text-slate-muted">
+                      {head.note[lang]}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
