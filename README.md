@@ -142,12 +142,9 @@ The response `outcome` tells you what happened, the same way the LIVE badge's
 | `not-configured` | No `CONTACT_WEBHOOK_URL` set; the form says so rather than pretending |
 | `invalid` | Failed validation; `errors` lists the offending field names |
 | `forward-error` | The webhook timed out or refused — the visitor is asked to retry |
-| `dropped` | Honeypot tripped; accepted at the HTTP level but never delivered |
 
 Success is never reported on a delivery that didn't happen: leaving someone
 waiting for a reply that was never coming is worse than showing an error.
-That includes `dropped`, which answers `200` with `ok: true` to keep bots
-uninformed while still telling the form not to render a confirmation.
 
 **POPIA.** The form asks for the minimum needed to reply (a name, plus an
 email *or* a phone number — not both) and will not submit without an
@@ -157,23 +154,20 @@ crafted request can't skip it. The forwarded payload records `consent` and
 the church's inbox is the only place the submission survives. The privacy
 wording shown to visitors lives in `src/data/requestCopy.ts`.
 
-A hidden "website" field acts as a **honeypot** — it's positioned off-screen
-and skipped by keyboard focus, so a person never sees or fills it, but form
-bots fill every field they find. A submission with it filled gets a normal
-`200` and is never forwarded; telling a bot it was caught only teaches it to
-try again differently.
+**Spam filtering is Cloudflare's, not the app's.** There is deliberately no
+honeypot or in-Worker filtering: Bot Fight Mode and a WAF rate-limiting rule
+sit in front of `/api/contact` at the edge, where they see the whole request
+and cost nothing to run. An earlier hidden-field honeypot was removed because
+a password manager filling it would silently bin a real person's message,
+and it never stopped a bot that simply omitted the field.
 
-The one way that can misfire is a password manager filling the hidden field
-for a real visitor, so the field carries the documented opt-outs for
-1Password, LastPass and Dashlane, and the `dropped` outcome makes the form
-show an honest error pointing them at a person rather than a false
-confirmation.
+> Those two settings are **not on by default**, and they only apply on a
+> custom domain — a `*.workers.dev` URL gets no zone-level protection. Until
+> they're enabled, this endpoint is unprotected. See
+> [SETUP-INSTRUCTIONS.md §3.5](./SETUP-INSTRUCTIONS.md).
 
-There is no rate limiting beyond the honeypot, and a bot that simply omits
-the `website` key walks straight past it. Workers has no shared memory
-between isolates, so a real limit needs KV, D1 or a Durable Object — or
-Cloudflare Turnstile in front of the form. Worth adding before this endpoint
-sees real traffic.
+Turnstile is the next step up if that isn't enough, and unlike the above it
+needs code: a widget in the form and a `siteverify` call before the forward.
 
 On the GitHub Pages devtest build there is no Worker at all, so
 `PUBLIC_HAS_API=false` renders the form read-only behind a notice rather than

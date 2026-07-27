@@ -24,11 +24,11 @@ type Status = 'idle' | 'submitting' | 'success' | 'error';
 
 type ContactResponse = {
   ok?: boolean;
-  outcome?: 'forwarded' | 'not-configured' | 'invalid' | 'forward-error' | 'dropped';
+  outcome?: 'forwarded' | 'not-configured' | 'invalid' | 'forward-error';
   errors?: string[];
 };
 
-const EMPTY = { name: '', email: '', phone: '', message: '', website: '' };
+const EMPTY = { name: '', email: '', phone: '', message: '' };
 
 type FocusableField = 'name' | 'email' | 'phone' | 'consent';
 
@@ -142,7 +142,6 @@ export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicC
           email: values.email.trim(),
           phone: values.phone.trim(),
           message: values.message.trim(),
-          website: values.website,
           // The checkbox state, not a constant — otherwise the Worker's consent
           // check verifies nothing and the POPIA record traces to a literal.
           consent,
@@ -151,15 +150,12 @@ export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicC
 
       const data = (await res.json().catch(() => null)) as ContactResponse | null;
 
-      // `dropped` is the honeypot: the Worker answers 200 to keep bots
-      // uninformed, but nothing was delivered, so this must never read as sent.
-      if (data?.ok && data.outcome !== 'dropped') {
+      if (data?.ok) {
         setStatus('success');
         return;
       }
 
-      if (data?.outcome === 'dropped') fail([], t.errBlocked);
-      else if (data?.outcome === 'not-configured') fail([], t.errNotConfigured);
+      if (data?.outcome === 'not-configured') fail([], t.errNotConfigured);
       else if (data?.outcome === 'forward-error') fail([], t.errForward);
       else if (data?.outcome === 'invalid') {
         // A rejection on `body`, `message` or `topic` has no field to highlight;
@@ -329,27 +325,6 @@ export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicC
             value={values.message}
             onChange={set('message')}
             className={`${fieldClass('message')} resize-y`}
-          />
-        </div>
-
-        {/* Honeypot: hidden from people, irresistible to form bots. The
-            data-* attributes are the documented opt-outs for 1Password,
-            LastPass and Dashlane — "website" is exactly the sort of name a
-            password manager likes to fill, and a real person tripping this
-            would have their message silently binned. */}
-        <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
-          <label htmlFor={id('website')}>Website</label>
-          <input
-            id={id('website')}
-            name="website"
-            type="text"
-            tabIndex={-1}
-            autoComplete="off"
-            data-1p-ignore
-            data-lpignore="true"
-            data-form-type="other"
-            value={values.website}
-            onChange={set('website')}
           />
         </div>
 

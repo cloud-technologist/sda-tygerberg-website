@@ -14,13 +14,7 @@ export type ContactEnv = {
 /** Which page the request came from — decides who the church routes it to. */
 export type ContactTopic = 'connect' | 'bible-study';
 
-export type ContactOutcome =
-  | 'forwarded'
-  | 'not-configured'
-  | 'invalid'
-  | 'forward-error'
-  /** Honeypot tripped: accepted at the HTTP level, deliberately never forwarded. */
-  | 'dropped';
+export type ContactOutcome = 'forwarded' | 'not-configured' | 'invalid' | 'forward-error';
 
 export type ContactResult = {
   ok: boolean;
@@ -154,16 +148,12 @@ export async function handleContact(request: Request, env: ContactEnv): Promise<
     return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 400);
   }
 
-  // Honeypot: a field hidden from people but happily filled in by form bots.
-  // Answer 200 so a bot learns nothing — telling it it was caught only teaches
-  // it to try again differently — but report `dropped`, never `forwarded`, so
-  // the form cannot render "we've received your request" over a submission
-  // that was thrown away. A password manager filling the hidden field is
-  // unlikely, and that visitor would be a real person owed an honest answer.
-  if (str(body.website)) {
-    return json({ ok: true, outcome: 'dropped' }, 200);
-  }
-
+  // Bot filtering is Cloudflare's job, not this handler's — Bot Fight Mode and
+  // the WAF rate-limiting rule sit in front of this route at the edge (see
+  // SETUP-INSTRUCTIONS.md §3.5). A hidden honeypot field used to live here; it
+  // was removed because a password manager filling it would silently bin a
+  // real person's message, and it never stopped a bot that simply omitted the
+  // field anyway.
   const { errors, clean } = validate(body);
   if (!clean) return json({ ok: false, outcome: 'invalid', errors }, 400);
 

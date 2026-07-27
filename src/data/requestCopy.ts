@@ -49,8 +49,6 @@ export type FormCopy = {
   errNotConfigured: string;
   errForward: string;
   errNetwork: string;
-  /** Shown if the spam trap catches a real person. Points them at a human. */
-  errBlocked: string;
   previewNotice: string;
   otherWaysHeading: string;
   otherWaysBody: string;
@@ -156,8 +154,6 @@ export const requestFormCopy: Record<Lang, FormCopy> = {
     errValidation: 'Kyk asseblief die gemerkte velde na.',
     errUnexpected:
       'Ons kon nie hierdie versoek aanvaar nie. Maak asseblief jou boodskap korter en probeer weer.',
-    errBlocked:
-      'Ons kon nie hierdie versoek deurstuur nie. Probeer asseblief weer, en as dit steeds nie werk nie, is jy baie welkom om Sabbatoggend by die kerk met ons te kom gesels.',
     errNotConfigured:
       'Die aanlyn vorm is nog nie aktief nie. Kom gerus Sabbatoggend by die kerk aan — ons help jou graag persoonlik.',
     errForward: 'Ons kon nie jou versoek deurstuur nie. Probeer asseblief weer oor ’n rukkie.',
@@ -193,8 +189,6 @@ export const requestFormCopy: Record<Lang, FormCopy> = {
     errValidation: 'Please check the highlighted fields.',
     errUnexpected:
       'We couldn’t accept this request. Please shorten your message and try again.',
-    errBlocked:
-      'We couldn’t send this request through. Please try again, and if it still doesn’t work you’re very welcome to come and talk to us at church on Sabbath morning.',
     errNotConfigured:
       'The online form isn’t live yet. You’re very welcome to join us on Sabbath morning — we’d love to help you in person.',
     errForward: 'We couldn’t send your request through. Please try again in a little while.',
