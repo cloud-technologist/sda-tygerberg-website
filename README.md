@@ -142,9 +142,12 @@ The response `outcome` tells you what happened, the same way the LIVE badge's
 | `not-configured` | No `CONTACT_WEBHOOK_URL` set; the form says so rather than pretending |
 | `invalid` | Failed validation; `errors` lists the offending field names |
 | `forward-error` | The webhook timed out or refused — the visitor is asked to retry |
+| `dropped` | Honeypot tripped; accepted at the HTTP level but never delivered |
 
 Success is never reported on a delivery that didn't happen: leaving someone
 waiting for a reply that was never coming is worse than showing an error.
+That includes `dropped`, which answers `200` with `ok: true` to keep bots
+uninformed while still telling the form not to render a confirmation.
 
 **POPIA.** The form asks for the minimum needed to reply (a name, plus an
 email *or* a phone number — not both) and will not submit without an
@@ -157,10 +160,20 @@ wording shown to visitors lives in `src/data/requestCopy.ts`.
 A hidden "website" field acts as a **honeypot** — it's positioned off-screen
 and skipped by keyboard focus, so a person never sees or fills it, but form
 bots fill every field they find. A submission with it filled gets a normal
-`200` and is silently dropped; telling a bot it was caught only teaches it to
-try again differently. There is no rate limiting beyond that (Workers has no
-shared memory between isolates) — add a KV- or D1-backed counter if spam
-becomes a real problem.
+`200` and is never forwarded; telling a bot it was caught only teaches it to
+try again differently.
+
+The one way that can misfire is a password manager filling the hidden field
+for a real visitor, so the field carries the documented opt-outs for
+1Password, LastPass and Dashlane, and the `dropped` outcome makes the form
+show an honest error pointing them at a person rather than a false
+confirmation.
+
+There is no rate limiting beyond the honeypot, and a bot that simply omits
+the `website` key walks straight past it. Workers has no shared memory
+between isolates, so a real limit needs KV, D1 or a Durable Object — or
+Cloudflare Turnstile in front of the form. Worth adding before this endpoint
+sees real traffic.
 
 On the GitHub Pages devtest build there is no Worker at all, so
 `PUBLIC_HAS_API=false` renders the form read-only behind a notice rather than

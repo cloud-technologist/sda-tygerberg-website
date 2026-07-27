@@ -1,112 +1,143 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
-import { departmentHeads } from '../../data/departmentHeads';
+import { departmentHeads, type DepartmentHead } from '../../data/departmentHeads';
+import type { Lang } from '../../data/site';
 
 const AUTOPLAY_MS = 4200;
-const GAP_PX = 20; // matches gap-5
+const GAP_PX = 20;
+const TRANSITION = 'transform 520ms cubic-bezier(.22,.61,.36,1)';
+/** Drag further than this and letting go commits to the next/previous card. */
+const SWIPE_COMMIT_PX = 60;
+
+const COUNT = departmentHeads.length;
 
 /**
- * The roster is rendered three times over. The middle copy is the one you
- * normally look at; the outer two exist so there is always more track in both
- * directions than a single scroll can consume. Once scrolling settles, the
- * position is snapped back into the middle copy by exactly one set-width —
- * the same card sits under the same pixel, so the jump is invisible and the
- * carousel loops forever in either direction.
+ * Which slot a card occupies relative to the active one: 0 is the leftmost
+ * visible card, positive slots run off to the right, negative off to the left.
  *
- * Three is the minimum that works: with two copies, scrolling left from the
- * very start has nowhere to go.
+ * This function *is* the carousel. Every card's position is a pure function of
+ * `active` in modular arithmetic, so the ring is genuinely circular in both
+ * directions — there is no end to reach, no duplicated markup, and no
+ * accumulated scroll offset that can drift out of alignment. Stepping past the
+ * last card is just `(active + 1) % COUNT`.
  */
-const COPIES = 3;
-/** How long the track must be quiet before recentring, so we never fight a smooth scroll. */
-const SETTLE_MS = 140;
+function slotOf(index: number, active: number) {
+  const ahead = (((index - active) % COUNT) + COUNT) % COUNT;
+  // Send the far half of the ring round the back, so cards leave to the left
+  // as well as arriving from the right.
+  return ahead > COUNT / 2 ? ahead - COUNT : ahead;
+}
+
+/**
+ * Slots that can be on screen at some breakpoint (cards are 72% wide on
+ * mobile, 31% on desktop). Only these animate: the one card per step that
+ * wraps round the back of the ring jumps the full width of the roster, and
+ * that jump must not be seen crossing the viewport.
+ */
+const isVisibleSlot = (slot: number) => slot >= -1 && slot <= 4;
+
+const CARD_WIDTH = 'w-[72%] sm:w-[45%] lg:w-[31%]';
+
+function Card({ head, lang }: { head: DepartmentHead; lang: Lang }) {
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-card bg-cream-card">
+      <div
+        className="flex flex-none items-center justify-center text-xs text-slate-muted"
+        style={{
+          aspectRatio: '4/3',
+          backgroundImage:
+            'repeating-linear-gradient(45deg, var(--color-tan) 0 10px, var(--color-tan-border) 10px 20px)',
+        }}
+      >
+        {head.photoUrl ? (
+          <img src={head.photoUrl} alt={head.name} className="h-full w-full object-cover" />
+        ) : lang === 'af' ? (
+          'HOD foto'
+        ) : (
+          'HOD photo'
+        )}
+      </div>
+      <div className="p-4 text-center">
+        <div className="font-serif text-lg text-navy">{head.name}</div>
+        {/* Stacked rather than joined: someone heading three departments would
+            otherwise wrap into an unreadable run. */}
+        <div className="mt-0.5 text-sm leading-snug text-slate">
+          {head.roles[lang].map((role) => (
+            <div key={role}>{role}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AboutCarousel() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
-  const trackRef = useRef<HTMLDivElement | null>(null);
+
+  const [active, setActive] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragFrom = useRef<number | null>(null);
 
-  /**
-   * Width of one full copy of the roster, measured from the DOM rather than
-   * derived from scrollWidth — the flex gaps make the arithmetic version
-   * off-by-a-gap, and a drift of even one gap per lap is visible.
-   */
-  const setWidth = () => {
-    const track = trackRef.current;
-    if (!track) return 0;
-    const cards = track.querySelectorAll<HTMLElement>('[data-card]');
-    if (cards.length < departmentHeads.length + 1) return 0;
-    return cards[departmentHeads.length].offsetLeft - cards[0].offsetLeft;
-  };
-
-  /** Move without animating, whatever `scroll-smooth` says — this jump must not be seen. */
-  const jumpTo = (left: number) => {
-    const track = trackRef.current;
-    if (!track) return;
-    const previous = track.style.scrollBehavior;
-    track.style.scrollBehavior = 'auto';
-    track.scrollLeft = left;
-    track.style.scrollBehavior = previous;
-  };
-
-  /**
-   * Pull the scroll position back into the middle copy, keeping it inside
-   * [0.5, 1.5) set-widths. `projected` lets a caller normalise for where a
-   * scroll is *about* to land rather than where it currently is.
-   */
-  const recenter = (projected?: number) => {
-    const track = trackRef.current;
-    const width = setWidth();
-    if (!track || width <= 0) return;
-    const at = projected ?? track.scrollLeft;
-    if (at < width * 0.5) jumpTo(track.scrollLeft + width);
-    else if (at >= width * 1.5) jumpTo(track.scrollLeft - width);
-  };
-
-  const scrollByCard = (dir: 1 | -1) => {
-    const track = trackRef.current;
-    if (!track) return;
-    const card = track.querySelector<HTMLElement>('[data-card]');
-    const step = card ? card.offsetWidth + GAP_PX : track.clientWidth * 0.8;
-    // Wrap *before* animating, based on where this step will land. Assigning
-    // scrollLeft mid-animation cancels the smooth scroll in Chrome, so the
-    // settle-based pass below can't be relied on while the buttons or
-    // autoplay are firing faster than the track goes quiet — clicking Next
-    // repeatedly would otherwise walk off the end of the tripled track.
-    recenter(track.scrollLeft + dir * step);
-    track.scrollBy({ left: dir * step, behavior: 'smooth' });
-  };
+  const step = (dir: 1 | -1) => setActive((a) => (((a + dir) % COUNT) + COUNT) % COUNT);
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    // No end to detect any more — recentring keeps the track inexhaustible.
-    timerRef.current = setInterval(() => scrollByCard(1), AUTOPLAY_MS);
+    timerRef.current = setInterval(() => step(1), AUTOPLAY_MS);
   };
 
   useEffect(() => {
-    // Start on the middle copy. Identical content sits at both offsets, so
-    // this is invisible even though it runs after hydration.
-    const raf = requestAnimationFrame(() => jumpTo(setWidth()));
-    resetTimer();
-    return () => {
-      cancelAnimationFrame(raf);
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => {
+      setReduceMotion(motion.matches);
       if (timerRef.current) clearInterval(timerRef.current);
-      if (settleRef.current) clearTimeout(settleRef.current);
+      // Someone who has asked for less motion should not have the page
+      // animating at them unprompted; the arrows still work.
+      if (!motion.matches) resetTimer();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    apply();
+    motion.addEventListener('change', apply);
+    return () => {
+      motion.removeEventListener('change', apply);
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
-  const onScroll = () => {
-    if (settleRef.current) clearTimeout(settleRef.current);
-    settleRef.current = setTimeout(recenter, SETTLE_MS);
+  const nudge = (dir: 1 | -1) => {
+    step(dir);
+    if (!reduceMotion) resetTimer();
   };
 
-  const nudge = (dir: 1 | -1) => {
-    scrollByCard(dir);
-    resetTimer();
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragFrom.current = e.clientX;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (timerRef.current) clearInterval(timerRef.current);
   };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragFrom.current === null) return;
+    setDrag(e.clientX - dragFrom.current);
+  };
+
+  const onPointerUp = () => {
+    if (dragFrom.current === null) return;
+    dragFrom.current = null;
+    if (drag <= -SWIPE_COMMIT_PX) step(1);
+    else if (drag >= SWIPE_COMMIT_PX) step(-1);
+    setDrag(0);
+    if (!reduceMotion) resetTimer();
+  };
+
+  // The tallest card in the current language, rendered invisibly in normal
+  // flow: the real cards are absolutely positioned and so can't give the track
+  // a height of its own.
+  const tallest = departmentHeads.reduce((a, b) =>
+    b.roles[lang].length > a.roles[lang].length ? b : a,
+  );
 
   return (
     <section id="oor" className="scroll-mt-24 bg-tan py-16">
@@ -135,53 +166,37 @@ export function AboutCarousel() {
           </button>
 
           <div
-            ref={trackRef}
-            onScroll={onScroll}
-            className="scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-1 pb-2"
+            aria-roledescription="carousel"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            // Vertical panning stays with the page; horizontal is ours to read
+            // as a swipe.
+            className="relative touch-pan-y overflow-hidden pb-2"
           >
-            {Array.from({ length: COPIES }, (_, copy) =>
-              departmentHeads.map((head) => (
+            <div aria-hidden className={`invisible ${CARD_WIDTH}`}>
+              <Card head={tallest} lang={lang} />
+            </div>
+
+            {departmentHeads.map((head, index) => {
+              const slot = slotOf(index, active);
+              const animate = !drag && !reduceMotion && isVisibleSlot(slot);
+              return (
                 <div
-                  key={`${copy}-${head.id}`}
-                  data-card
-                  // Only the middle copy is read out; the other two are the
-                  // same people again and would just triple the announcement.
-                  aria-hidden={copy !== 1}
-                  className="w-[72%] flex-none snap-start overflow-hidden rounded-card bg-cream-card sm:w-[45%] lg:w-[31%]"
+                  key={head.id}
+                  className={`absolute left-0 top-0 h-full ${CARD_WIDTH}`}
+                  style={{
+                    // `100%` is the card's own width, so the step stays correct
+                    // at every breakpoint without measuring anything.
+                    transform: `translateX(calc(${slot} * (100% + ${GAP_PX}px) + ${drag}px))`,
+                    transition: animate ? TRANSITION : 'none',
+                  }}
                 >
-                  <div
-                    className="flex items-center justify-center text-xs text-slate-muted"
-                    style={{
-                      aspectRatio: '4/3',
-                      backgroundImage:
-                        'repeating-linear-gradient(45deg, var(--color-tan) 0 10px, var(--color-tan-border) 10px 20px)',
-                    }}
-                  >
-                    {head.photoUrl ? (
-                      <img
-                        src={head.photoUrl}
-                        alt={head.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : lang === 'af' ? (
-                      'HOD foto'
-                    ) : (
-                      'HOD photo'
-                    )}
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="font-serif text-lg text-navy">{head.name}</div>
-                    {/* Stacked rather than joined: someone heading three
-                        departments would otherwise wrap into an unreadable run. */}
-                    <div className="mt-0.5 text-sm leading-snug text-slate">
-                      {head.roles[lang].map((role) => (
-                        <div key={role}>{role}</div>
-                      ))}
-                    </div>
-                  </div>
+                  <Card head={head} lang={lang} />
                 </div>
-              )),
-            )}
+              );
+            })}
           </div>
         </div>
       </div>

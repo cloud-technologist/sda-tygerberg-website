@@ -14,7 +14,13 @@ export type ContactEnv = {
 /** Which page the request came from — decides who the church routes it to. */
 export type ContactTopic = 'connect' | 'bible-study';
 
-export type ContactOutcome = 'forwarded' | 'not-configured' | 'invalid' | 'forward-error';
+export type ContactOutcome =
+  | 'forwarded'
+  | 'not-configured'
+  | 'invalid'
+  | 'forward-error'
+  /** Honeypot tripped: accepted at the HTTP level, deliberately never forwarded. */
+  | 'dropped';
 
 export type ContactResult = {
   ok: boolean;
@@ -121,14 +127,27 @@ export async function handleContact(request: Request, env: ContactEnv): Promise<
     return json({ ok: false, outcome: 'invalid', errors: ['method'] }, 405);
   }
 
+  // Content-Length is a claim, not a fact: a chunked request can omit it and a
+  // junk value parses to NaN, either of which slips past a `>` test. Keep it
+  // as a cheap early-out, but let the measured size be the one that decides.
   const declaredLength = Number(request.headers.get('content-length') ?? '0');
   if (declaredLength > MAX_BODY_BYTES) {
     return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 413);
   }
 
+  let raw: ArrayBuffer;
+  try {
+    raw = await request.arrayBuffer();
+  } catch {
+    return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 400);
+  }
+  if (raw.byteLength > MAX_BODY_BYTES) {
+    return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 413);
+  }
+
   let body: RawBody;
   try {
-    const parsed = await request.json();
+    const parsed = JSON.parse(new TextDecoder().decode(raw));
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
     body = parsed as RawBody;
   } catch {
@@ -136,10 +155,13 @@ export async function handleContact(request: Request, env: ContactEnv): Promise<
   }
 
   // Honeypot: a field hidden from people but happily filled in by form bots.
-  // Answer 200 and drop it — telling a bot it was caught only teaches it to
-  // try again differently.
+  // Answer 200 so a bot learns nothing — telling it it was caught only teaches
+  // it to try again differently — but report `dropped`, never `forwarded`, so
+  // the form cannot render "we've received your request" over a submission
+  // that was thrown away. A password manager filling the hidden field is
+  // unlikely, and that visitor would be a real person owed an honest answer.
   if (str(body.website)) {
-    return json({ ok: true, outcome: 'forwarded' }, 200);
+    return json({ ok: true, outcome: 'dropped' }, 200);
   }
 
   const { errors, clean } = validate(body);
