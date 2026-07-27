@@ -1,13 +1,16 @@
-import { useLanguage } from '../../context/LanguageContext';
-import { beliefsCopy } from '../../data/beliefsCopy';
 import { withBase } from '../../lib/base';
 import { Logo } from './Logo';
 import { LanguageToggle } from './LanguageToggle';
 
-export function BeliefsHeader() {
-  const { lang } = useLanguage();
-  const t = beliefsCopy[lang];
-
+/**
+ * Sticky header for the standalone pages (/beliefs, /verbind, /bybelstudies).
+ * The homepage has its own (Header.tsx) with in-page anchor nav — these pages
+ * are separate documents, so the only navigation they need is back home.
+ *
+ * `backHome` is passed in rather than read from a copy module because each
+ * page keeps its own bilingual copy file.
+ */
+export function SubPageHeader({ backHome }: { backHome: string }) {
   return (
     <header className="sticky top-0 z-50 border-b border-subtle bg-cream/95 backdrop-blur">
       <div className="mx-auto flex max-w-content-narrow items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-2.5 sm:py-3.5">
@@ -24,7 +27,7 @@ export function BeliefsHeader() {
           href={withBase('/')}
           className="h-8 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-pill border border-orange bg-orange/5 px-2.5 sm:px-3.5 text-[11px] sm:text-xs font-bold text-navy hover:bg-orange hover:text-white transition-colors"
         >
-          {t.backHome}
+          {backHome}
         </a>
         <LanguageToggle variant="light" />
       </div>

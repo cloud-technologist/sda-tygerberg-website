@@ -79,7 +79,7 @@ export function AboutCarousel() {
           >
             {departmentHeads.map((head) => (
               <div
-                key={head.name}
+                key={head.id}
                 data-card
                 className="w-[72%] flex-none snap-start overflow-hidden rounded-card bg-cream-card sm:w-[45%] lg:w-[31%]"
               >
@@ -101,7 +101,7 @@ export function AboutCarousel() {
                 </div>
                 <div className="p-4 text-center">
                   <div className="font-serif text-lg text-navy">{head.name}</div>
-                  <div className="text-sm text-slate">{head.dept[lang]}</div>
+                  <div className="text-sm text-slate">{head.role[lang]}</div>
                 </div>
               </div>
             ))}

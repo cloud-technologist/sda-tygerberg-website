@@ -9,3 +9,9 @@ YOUTUBE_CHANNEL_ID=UCtZlioPBBORWMMMSJ9BE1Wg
 # Optional local override — widen the window so you can test without waiting
 # for Saturday morning. `* * * * *` means "always open".
 # LIVE_CHECK_CRON=* * * * *
+
+# Where /api/contact delivers a validated submission from the /verbind and
+# /bybelstudies forms. Also a Worker secret in production. Point it at any
+# local server that returns 200 to watch what the church's inbox would receive;
+# leave it unset and the form reports `not-configured` instead of pretending.
+CONTACT_WEBHOOK_URL=

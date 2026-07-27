@@ -1,10 +1,12 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import { getLiveStatus, type LiveStatusEnv } from './liveStatus';
+import { handleContact, type ContactEnv } from './contact';
 
-export type Env = LiveStatusEnv & {
-  ASSETS: Fetcher;
-};
+export type Env = LiveStatusEnv &
+  ContactEnv & {
+    ASSETS: Fetcher;
+  };
 
 /**
  * Serves the static Astro build via the ASSETS binding, plus a single API
@@ -14,6 +16,10 @@ export type Env = LiveStatusEnv & {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
+
+    if (pathname === '/api/contact') {
+      return handleContact(request, env);
+    }
 
     if (pathname === '/api/live-status') {
       const status = await getLiveStatus(env);

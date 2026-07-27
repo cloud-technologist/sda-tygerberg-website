@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { BANKING_DETAILS, givingCopy } from '../../data/giving';
+import { withBase } from '../../lib/base';
 
 export function GetInvolved() {
   const { lang } = useLanguage();
@@ -27,7 +28,7 @@ export function GetInvolved() {
               <p className="mb-4 text-sm leading-relaxed text-blue-pale">{t.connectDesc}</p>
             </div>
             <a
-              href="#besoek"
+              href={withBase('/verbind')}
               className="w-full inline-flex items-center justify-center gap-1.5 rounded-pill border border-white/20 px-4 py-2 text-[13px] font-bold text-white hover:border-white hover:bg-white/10 transition-colors"
             >
               {t.connectCta} →
@@ -40,7 +41,7 @@ export function GetInvolved() {
               <p className="mb-4 text-sm leading-relaxed text-blue-pale">{t.studyDesc}</p>
             </div>
             <a
-              href="#besoek"
+              href={withBase('/bybelstudies')}
               className="w-full inline-flex items-center justify-center gap-1.5 rounded-pill border border-white/20 px-4 py-2 text-[13px] font-bold text-white hover:border-white hover:bg-white/10 transition-colors"
             >
               {t.studyCta} →
