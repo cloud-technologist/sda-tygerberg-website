@@ -3,7 +3,7 @@ import { Logo } from './Logo';
 import { LanguageToggle } from './LanguageToggle';
 
 /**
- * Sticky header for the standalone pages (/beliefs, /verbind, /bybelstudies).
+ * Sticky header for the standalone pages (/beliefs, /connect, /bible-studies).
  * The homepage has its own (Header.tsx) with in-page anchor nav — these pages
  * are separate documents, so the only navigation they need is back home.
  *

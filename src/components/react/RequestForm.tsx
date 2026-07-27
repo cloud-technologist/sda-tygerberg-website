@@ -4,7 +4,7 @@ import { withBase } from '../../lib/base';
 import { requestFormCopy, type RequestTopic, type TopicCopy } from '../../data/requestCopy';
 
 /**
- * The shared request form behind /verbind and /bybelstudies. Posts to the
+ * The shared request form behind /connect and /bible-studies. Posts to the
  * Worker's /api/contact route (src/worker/contact.ts).
  *
  * The GitHub Pages devtest build sets PUBLIC_HAS_API=false — there's no Worker

@@ -1,7 +1,7 @@
 import type { Lang } from './site';
 
 /**
- * Copy for the two request pages (/verbind and /bybelstudies). Both render the
+ * Copy for the two request pages (/connect and /bible-studies). Both render the
  * same shell and the same form; only `requestTopics` differs between them.
  *
  * The `topic` string is also the value posted to /api/contact — it's how the

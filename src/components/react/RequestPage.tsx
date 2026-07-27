@@ -6,7 +6,7 @@ import { SubPageFooter } from './SubPageFooter';
 import { RequestForm } from './RequestForm';
 
 /**
- * Shell for the two request pages. /verbind and /bybelstudies are the same
+ * Shell for the two request pages. /connect and /bible-studies are the same
  * page with different copy — `topic` picks the copy and is also what the
  * Worker uses to route the submission (see src/data/requestCopy.ts).
  *

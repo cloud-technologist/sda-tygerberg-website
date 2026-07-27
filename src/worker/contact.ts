@@ -109,7 +109,7 @@ async function forward(url: string, payload: unknown): Promise<boolean> {
 }
 
 /**
- * Handles POST /api/contact for the /verbind and /bybelstudies forms.
+ * Handles POST /api/contact for the /connect and /bible-studies forms.
  *
  * Never reports success it can't back up: a submission is only `forwarded`
  * once the webhook has actually accepted it. Silently swallowing a failed

@@ -254,7 +254,7 @@ section before widening it.
 
 ## 6. The contact webhook
 
-`/verbind` and `/bybelstudies` post to `/api/contact`, which forwards each
+`/connect` and `/bible-studies` post to `/api/contact`, which forwards each
 validated submission as JSON to `CONTACT_WEBHOOK_URL`. Any endpoint that
 accepts a JSON `POST` works, which keeps the church off any single vendor.
 
@@ -277,8 +277,8 @@ The payload delivered to your webhook looks like this:
 }
 ```
 
-- `topic` is either `connect` (general enquiry, from `/verbind`) or
-  `bible-study` (from `/bybelstudies`) — use it to route to the right person.
+- `topic` is either `connect` (general enquiry, from `/connect`) or
+  `bible-study` (from `/bible-studies`) — use it to route to the right person.
 - Exactly one of `email` / `phone` is guaranteed non-empty; the other may be
   an empty string. The form asks for the minimum needed to reply.
 - `consent` and `submittedAt` are recorded because POPIA consent has to be
@@ -314,7 +314,7 @@ A green setup looks like:
 - [ ] `https://tygerberg-sda.cloudkid.link` loads the homepage
 - [ ] `/api/live-status` returns JSON with a `source` field — `outside-window`
       on most days is correct, not an error
-- [ ] `/verbind` and `/bybelstudies` load and show the form
+- [ ] `/connect` and `/bible-studies` load and show the form
 - [ ] Submitting a real request lands in the church inbox
 - [ ] The devtest Pages URL loads, with the form shown read-only behind its
       preview notice (expected — no Worker there)

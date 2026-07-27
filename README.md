@@ -119,7 +119,7 @@ to diagnose a badge that isn't behaving. A malformed cron or unknown
 timezone fails *closed* — `invalid-schedule`, zero API calls — so a typo
 costs nothing rather than quietly spending quota.
 
-## Contact form (`/verbind`, `/bybelstudies`)
+## Contact form (`/connect`, `/bible-studies`)
 
 Two pages collect requests from visitors: **Verbind** (a general enquiry) and
 **Bybelstudies** (a free Bible/baptismal study). They're the same shell with
@@ -213,7 +213,7 @@ components:
 | `src/data/beliefsCopy.ts` | Beliefs-page header copy |
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
 | `src/data/departmentHeads.ts` | Department-head carousel data — real names from the board's 2025/2026 Ampsdraers roster; **photos still TBA** |
-| `src/data/requestCopy.ts` | Copy for the `/verbind` and `/bybelstudies` request pages, including the POPIA privacy/consent wording |
+| `src/data/requestCopy.ts` | Copy for the `/connect` and `/bible-studies` request pages, including the POPIA privacy/consent wording |
 | `src/data/resources.ts` | External resource links (logos self-hosted under `public/logos/`) |
 | `src/data/giving.ts` | EFT banking details shown in the Give card's expandable panel |
 
@@ -227,7 +227,7 @@ original handoff and are **not** blockers for this MVP:
    placeholder. Add `photoUrl` per person in `src/data/departmentHeads.ts` as
    headshots arrive; no component change needed.
 2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies now
-   lead to `/verbind` and `/bybelstudies`, which collect a request behind an
+   lead to `/connect` and `/bible-studies`, which collect a request behind an
    explicit POPIA consent checkbox and post it to `/api/contact` (see
    "Contact form" above). Still needs `CONTACT_WEBHOOK_URL` set as a Worker
    secret before submissions go anywhere. The banking contact line stays
