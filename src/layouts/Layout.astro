@@ -1,13 +1,29 @@
 ---
 import '../styles/global.css';
-import { withBase } from '../lib/base';
+import { withBase, canonicalPath } from '../lib/base';
+import { churchJsonLd } from '../lib/structuredData';
 
 interface Props {
   title: string;
   description: string;
+  /** Absolute or root-relative image for the social card. Defaults to the site card. */
+  image?: string;
+  ogType?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, image = '/og-image.png', ogType = 'website' } = Astro.props;
+
+// `Astro.site` comes from astro.config.mjs and is the production origin on
+// every build, devtest included — see canonicalPath for why the preview
+// deliberately advertises production URLs.
+const site = Astro.site!;
+const canonical = new URL(canonicalPath(Astro.url.pathname), site);
+const ogImage = new URL(image, site);
+
+// Only the devtest build sets this. Everything else indexes normally.
+const indexable = import.meta.env.PUBLIC_INDEXABLE !== 'false';
+
+const jsonLd = churchJsonLd(site);
 ---
 
 <!doctype html>
@@ -17,15 +33,48 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    {!indexable && <meta name="robots" content="noindex,nofollow" />}
+
     <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
+    <!-- iOS ignores an SVG favicon entirely, so a bookmarked page gets a
+         screenshot of the page instead of a mark without this. -->
+    <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
+
+    <!-- The card people actually see: a church link travels by WhatsApp and
+         Facebook far more than by search. -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage.href} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tygerberg SDA Kerk — 54 Boston St, Boston, Kaapstad" />
+    <meta property="og:site_name" content="Tygerberg SDA Kerk" />
+    <!-- The page ships as Afrikaans and swaps language client-side, so `af_ZA`
+         is what a crawler actually receives; English is listed as alternate. -->
+    <meta property="og:locale" content="af_ZA" />
+    <meta property="og:locale:alternate" content="en_ZA" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage.href} />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
   </head>
   <body>
+    <!-- Server-rendered rather than part of a React island: this has to work on
+         the very first Tab press, before any island hydrates. -->
+    <a class="skip-link" href="#main">Slaan oor na inhoud</a>
     <slot />
   </body>
 </html>
