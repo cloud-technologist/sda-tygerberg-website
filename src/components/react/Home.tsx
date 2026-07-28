@@ -7,6 +7,7 @@ import { AboutCarousel } from './AboutCarousel';
 import { BeliefsSummary } from './BeliefsSummary';
 import { GetInvolved } from './GetInvolved';
 import { Resources } from './Resources';
+import { FirstVisit } from './FirstVisit';
 import { VisitMap } from './VisitMap';
 import { Footer } from './Footer';
 
@@ -16,14 +17,19 @@ export function Home() {
       <div className="min-h-screen font-sans text-ink">
         <Header />
         <a id="top" />
-        <Hero />
-        <ServiceTimesStrip />
-        <ThisWeek />
-        <AboutCarousel />
-        <BeliefsSummary />
-        <GetInvolved />
-        <Resources />
-        <VisitMap />
+        {/* The landmark starts after the header so the skip link actually skips
+            the nav — that is the whole point of it. */}
+        <main id="main">
+          <Hero />
+          <ServiceTimesStrip />
+          <ThisWeek />
+          <AboutCarousel />
+          <BeliefsSummary />
+          <GetInvolved />
+          <Resources />
+          <FirstVisit />
+          <VisitMap />
+        </main>
         <Footer />
       </div>
     </LanguageProvider>

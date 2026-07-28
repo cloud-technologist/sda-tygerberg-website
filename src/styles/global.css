@@ -58,6 +58,50 @@
     color: var(--color-navy);
     text-decoration: none;
   }
+
+  /*
+   * Orange rather than navy: it is the only token in the palette with enough
+   * contrast against both the cream page and the navy bands and buttons, so one
+   * rule covers every focusable element on the site.
+   *
+   * :focus-visible, not :focus — a mouse click on an accordion shouldn't leave
+   * a ring behind, but a Tab press must.
+   */
+  :focus-visible {
+    outline: 3px solid var(--color-orange);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  /*
+   * Off-screen until focused. Not `display: none` or `visibility: hidden`,
+   * which would take it out of the tab order and defeat the purpose.
+   */
+  .skip-link {
+    /*
+     * Fixed, not absolute: absolute positions it against the document, so on a
+     * page scrolled past the fold it slides into a spot that is nowhere near
+     * the viewport and the visitor tabs to something they cannot see.
+     */
+    position: fixed;
+    left: 8px;
+    top: -100px;
+    z-index: 100;
+    padding: 10px 16px;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-navy);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    transition: top 120ms ease-out;
+  }
+
+  .skip-link:focus {
+    top: 8px;
+  }
 }
 
 @layer utilities {
