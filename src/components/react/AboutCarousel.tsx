@@ -91,9 +91,21 @@ export function AboutCarousel() {
   const [active, setActive] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [paused, setPaused] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const dragFrom = useRef<{ x: number; at: number } | null>(null);
+
+  /**
+   * Mirrors `paused` for `resetTimer` to read.
+   *
+   * A ref rather than the state value because `resetTimer` is called from the
+   * pointer handlers, and those are deliberately kept free of React state —
+   * reading state mid-gesture is exactly the bug that made swipes fail on real
+   * phones. Keeping the pause check here means every existing caller of
+   * `resetTimer()` stays untouched and still does the right thing.
+   */
+  const pausedRef = useRef(false);
 
   /**
    * How far the finger has travelled, written straight to the DOM as a custom
@@ -120,7 +132,22 @@ export function AboutCarousel() {
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    // A visitor who pressed pause meant it — a later swipe or arrow press must
+    // not quietly start the deck moving again.
+    if (pausedRef.current) return;
     timerRef.current = setInterval(() => step(1), AUTOPLAY_MS);
+  };
+
+  const togglePaused = () => {
+    const next = !pausedRef.current;
+    pausedRef.current = next;
+    setPaused(next);
+    // resetTimer reads the ref, so this both stops and restarts correctly.
+    if (next) {
+      if (timerRef.current) clearInterval(timerRef.current);
+    } else if (!reduceMotion) {
+      resetTimer();
+    }
   };
 
   useEffect(() => {
@@ -223,24 +250,26 @@ export function AboutCarousel() {
         <div className="relative">
           <button
             type="button"
-            aria-label="Previous"
+            aria-label={t.carouselPrev}
             onClick={() => nudge(-1)}
             className="absolute -left-3.5 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-navy text-white sm:flex"
           >
-            ‹
+            <span aria-hidden>‹</span>
           </button>
           <button
             type="button"
-            aria-label="Next"
+            aria-label={t.carouselNext}
             onClick={() => nudge(1)}
             className="absolute -right-3.5 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-navy text-white sm:flex"
           >
-            ›
+            <span aria-hidden>›</span>
           </button>
 
           <div
             ref={trackRef}
+            role="group"
             aria-roledescription="carousel"
+            aria-label={t.carouselLabel}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -256,10 +285,17 @@ export function AboutCarousel() {
             {departmentHeads.map((head, index) => {
               const slot = slotOf(index, active);
               const animate = !dragging && !reduceMotion && isAnimatedSlot(slot);
+              // At most three cards are on screen at the widest breakpoint.
+              // Anything outside that is hidden from assistive tech so the
+              // section reads as a few cards rather than a list of twenty.
+              // Erring wide on purpose: hiding a card that is actually visible
+              // would be the worse failure.
+              const offScreen = slot < 0 || slot > 2;
               return (
                 <div
                   key={head.id}
                   data-card
+                  aria-hidden={offScreen || undefined}
                   className={`absolute left-0 top-0 h-full ${CARD_WIDTH}`}
                   style={{
                     // `100%` is the card's own width, so the step stays correct
@@ -275,6 +311,60 @@ export function AboutCarousel() {
               );
             })}
           </div>
+
+          {/*
+            Controls sit below the deck, never over it. Overlaying arrows on a
+            phone would put a tap target on top of the swipe surface at exactly
+            the edges a thumb starts from — the swipe is the primary gesture
+            here and nothing is allowed to compete with it.
+
+            Prev/next only appear below `sm`, where the floating arrows are
+            hidden; above that they would duplicate them. Pause shows at every
+            width: autoplaying content needs a stop control regardless of
+            screen size.
+          */}
+          <div className="mt-5 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              aria-label={t.carouselPrev}
+              onClick={() => nudge(-1)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-navy/25 text-lg text-navy sm:hidden"
+            >
+              <span aria-hidden>‹</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={togglePaused}
+              aria-pressed={paused}
+              // Visible text is short so the row stays on one line on a narrow
+              // phone; the accessible name says what it actually does.
+              aria-label={paused ? t.carouselPlay : t.carouselPause}
+              className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-pill border border-navy/25 px-4 text-[13px] font-semibold text-navy"
+            >
+              <span aria-hidden>{paused ? '▶' : '❚❚'}</span>
+              <span aria-hidden>{paused ? t.carouselPlayShort : t.carouselPauseShort}</span>
+            </button>
+
+            <button
+              type="button"
+              aria-label={t.carouselNext}
+              onClick={() => nudge(1)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-navy/25 text-lg text-navy sm:hidden"
+            >
+              <span aria-hidden>›</span>
+            </button>
+          </div>
+
+          {/*
+            Announced only when the deck isn't moving on its own — otherwise a
+            screen reader would narrate a new name every 4.2 seconds, unasked.
+            With autoplay paused or reduced motion set, every move is the
+            visitor's own and worth reporting.
+          */}
+          <span className="sr-only" aria-live={paused || reduceMotion ? 'polite' : 'off'}>
+            {active + 1} {t.carouselOf} {COUNT} — {departmentHeads[active].name}
+          </span>
         </div>
       </div>
     </section>

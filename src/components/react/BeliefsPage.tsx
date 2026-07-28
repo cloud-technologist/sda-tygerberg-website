@@ -20,6 +20,8 @@ function BeliefsContent() {
     <div className="min-h-screen font-sans text-ink">
       <SubPageHeader backHome={t.backHome} />
 
+      <main id="main">
+
       <section className="mx-auto max-w-[780px] px-7 pb-8 pt-16 text-center">
         <div className="mb-4.5 text-xs font-bold uppercase tracking-[.16em] text-orange">
           {t.eyebrow}
@@ -85,6 +87,8 @@ function BeliefsContent() {
                   <button
                     type="button"
                     onClick={() => toggle(id)}
+                    aria-expanded={isOpen}
+                    aria-controls={`${id}-panel`}
                     className="flex w-full items-center justify-between gap-4 px-5.5 py-5 text-left"
                   >
                     <span className="flex items-center gap-3.5">
@@ -93,12 +97,15 @@ function BeliefsContent() {
                       </span>
                       <span className="font-serif text-[21px] text-ink">{item[lang].title}</span>
                     </span>
-                    <span className="flex-none text-2xl font-light text-navy">
+                    <span aria-hidden className="flex-none text-2xl font-light text-navy">
                       {isOpen ? '–' : '+'}
                     </span>
                   </button>
                   {isOpen && (
-                    <div className="px-5.5 pb-5.5 pl-15 text-[15px] leading-relaxed text-slate">
+                    <div
+                      id={`${id}-panel`}
+                      className="px-5.5 pb-5.5 pl-15 text-[15px] leading-relaxed text-slate"
+                    >
                       {item[lang].desc}
                     </div>
                   )}
@@ -108,6 +115,8 @@ function BeliefsContent() {
           </div>
         </section>
       ))}
+
+      </main>
 
       <SubPageFooter backHome={t.backHome} />
     </div>

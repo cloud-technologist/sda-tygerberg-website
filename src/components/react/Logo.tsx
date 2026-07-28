@@ -1,25 +1,33 @@
+// Imported as raw markup rather than as an <img> src so the symbol inherits
+// `currentColor`. It appears on cream in the headers and on navy in the
+// footers, and the official identity has both a solid and a reversed treatment
+// — one file that takes its colour from context serves both.
+import symbol from '../../assets/sda-symbol.svg?raw';
+
 type LogoProps = {
   size?: number;
-  ringColor?: string;
+  /** Colour of the mark. Navy on light surfaces, cream on dark ones. */
+  color?: string;
 };
 
-/** CSS-drawn church mark: a rotated square ("drop"/pin) inside a navy circle. No bitmap logo file. */
-export function Logo({ size = 38, ringColor = '#f6f2e9' }: LogoProps) {
-  const dropSize = Math.round(size * 0.4);
+/**
+ * The official Seventh-day Adventist symbol: the open Bible, the cross, and
+ * the flame of the Holy Spirit rising from it.
+ *
+ * The mark is a trademark of the General Conference of Seventh-day Adventists,
+ * used here by a member congregation. It is reproduced from the official
+ * artwork rather than redrawn — the identity system governs its proportions,
+ * so an approximation that merely resembles it would be wrong on both counts.
+ * Colour is the only permitted variation applied here; the geometry is
+ * untouched.
+ */
+export function Logo({ size = 38, color = 'var(--color-navy)' }: LogoProps) {
   return (
-    <div
-      className="flex-none rounded-full bg-navy flex items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      <div
-        style={{
-          width: dropSize,
-          height: dropSize,
-          border: `2px solid ${ringColor}`,
-          borderRadius: '0 50% 50% 50%',
-          transform: 'rotate(45deg)',
-        }}
-      />
-    </div>
+    <span
+      aria-hidden
+      className="flex-none inline-flex items-center justify-center"
+      style={{ width: size, height: size, color }}
+      dangerouslySetInnerHTML={{ __html: symbol }}
+    />
   );
 }

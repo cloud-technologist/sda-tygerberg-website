@@ -14,7 +14,10 @@ export function Hero() {
         <div className="mb-5 text-xs font-bold uppercase tracking-[.16em] text-orange">
           {t.heroEyebrow}
         </div>
-        <h1 className="mb-5 text-balance font-serif text-[clamp(34px,5vw,56px)] font-medium leading-[1.08] tracking-[-.015em] text-ink">
+        {/* The largest thing on the page, and the one line that has to land
+            before anything else does. The clamp keeps it from crowding a
+            narrow phone while letting it carry the hero on a desktop. */}
+        <h1 className="mb-5 text-balance font-serif text-[clamp(40px,5.6vw,68px)] font-medium leading-[1.05] tracking-[-.018em] text-ink">
           {t.heroTitle}
         </h1>
         <p className="mb-7 max-w-[460px] text-[17px] leading-relaxed text-slate">{t.heroSub}</p>

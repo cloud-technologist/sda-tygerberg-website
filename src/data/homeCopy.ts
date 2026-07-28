@@ -2,6 +2,9 @@ import type { Lang } from './site';
 
 export type WeekEntry = { day: string; name: string; time: string };
 
+/** A practical question a first-time visitor has, and its answer. */
+export type FirstVisitEntry = { q: string; a: string };
+
 export type HomeCopy = {
   navAbout: string;
   navBeliefs: string;
@@ -22,8 +25,25 @@ export type HomeCopy = {
   week: WeekEntry[];
   weekHeading: string;
   weekSub: string;
+  /**
+   * Waiting on answers from the board — see the README's open items. The
+   * section hides itself while this is empty, so adding entries here is all
+   * that's needed to publish it.
+   */
+  firstVisit: FirstVisitEntry[];
+  firstVisitHeading: string;
+  firstVisitSub: string;
   aboutHeading: string;
   aboutSub: string;
+  carouselLabel: string;
+  carouselPrev: string;
+  carouselNext: string;
+  carouselPause: string;
+  carouselPlay: string;
+  /** Short visible button text; the full string above is the accessible name. */
+  carouselPauseShort: string;
+  carouselPlayShort: string;
+  carouselOf: string;
   beliefsHeading: string;
   beliefsSub: string;
   beliefRead: string;
@@ -84,8 +104,19 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     ],
     weekHeading: 'Hierdie week by die kerk',
     weekSub: 'Almal welkom — bring gerus ’n vriend saam.',
+    firstVisit: [],
+    firstVisitHeading: 'Jou eerste besoek',
+    firstVisitSub: 'Wat om te verwag wanneer jy die eerste keer by ons aansluit.',
     aboutHeading: 'Ontmoet ons departementshoofde',
     aboutSub: 'Die mense wat ons gemeente se bedieninge lei.',
+    carouselLabel: 'Departementshoofde',
+    carouselPrev: 'Vorige departementshoof',
+    carouselNext: 'Volgende departementshoof',
+    carouselPause: 'Stop outomatiese blaai',
+    carouselPlay: 'Begin outomatiese blaai',
+    carouselPauseShort: 'Stop',
+    carouselPlayShort: 'Speel',
+    carouselOf: 'van',
     beliefsHeading: 'Wat ons glo',
     beliefsSub: 'Die 28 fundamentele leerstellings, gegroepeer in ses temas wat ons geloof in Jesus vorm.',
     beliefRead: 'Lees al 28 leerstellings →',
@@ -150,8 +181,19 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     ],
     weekHeading: 'This week at church',
     weekSub: 'Everyone welcome — feel free to bring a friend.',
+    firstVisit: [],
+    firstVisitHeading: 'Your first visit',
+    firstVisitSub: 'What to expect the first time you join us.',
     aboutHeading: 'Meet our department heads',
     aboutSub: 'The people who lead our church ministries.',
+    carouselLabel: 'Department heads',
+    carouselPrev: 'Previous department head',
+    carouselNext: 'Next department head',
+    carouselPause: 'Pause automatic scrolling',
+    carouselPlay: 'Resume automatic scrolling',
+    carouselPauseShort: 'Pause',
+    carouselPlayShort: 'Play',
+    carouselOf: 'of',
     beliefsHeading: 'What we believe',
     beliefsSub: 'The 28 fundamental beliefs, grouped into six themes that shape our faith in Jesus.',
     beliefRead: 'Read all 28 beliefs →',
