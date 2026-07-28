@@ -17,9 +17,8 @@ import type { Lang } from './site';
 export type DepartmentHead = {
   id: string;
   name: string;
+  /** Singular job titles — each card is one person, not a department listing. */
   roles: Record<Lang, string[]>;
-  /** Shown under the roles — for a post that's covered rather than filled. */
-  note?: Record<Lang, string>;
   photoUrl?: string;
 };
 
@@ -34,26 +33,24 @@ export const departmentHeads: DepartmentHead[] = [
     id: 'ouderlinge',
     name: 'Jaco van Niekerk',
     roles: {
-      af: ['Ouderlinge', 'Persoonlike Bediening', 'Strategiesebeplannings-komitee'],
-      en: ['Elders', 'Personal Ministries', 'Strategic Planning Committee'],
+      af: ['Ouderling', 'Persoonlike Bediening', 'Strategiesebeplannings-komitee'],
+      en: ['Elder', 'Personal Ministries', 'Strategic Planning Committee'],
     },
   },
   {
     id: 'diakens',
     name: 'Craig Campion',
+    // Veiligheidsoffisier has no official head on the board's list; the head
+    // deacon carries it, so it sits here as a plain title.
     roles: {
-      af: ['Diakonie · Diakens', 'Veiligheidsoffisier'],
-      en: ['Deaconry · Deacons', 'Safety Officer'],
-    },
-    note: {
-      af: 'Veiligheidsoffisier het tans geen amptelike hoof nie — waargeneem deur die hoofdiaken.',
-      en: 'Safety Officer has no official head at present — covered by the head deacon.',
+      af: ['Hoofdiaken', 'Veiligheidsoffisier'],
+      en: ['Head Deacon', 'Safety Officer'],
     },
   },
   {
     id: 'diakonesse',
     name: 'Marinda Wallace',
-    roles: { af: ['Diakonie · Diakonesse'], en: ['Deaconry · Deaconesses'] },
+    roles: { af: ['Hoofdiakones'], en: ['Head Deaconess'] },
   },
   {
     id: 'sabbatskool',

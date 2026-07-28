@@ -192,6 +192,55 @@ npx wrangler login
 npm run deploy        # astro build && wrangler deploy
 ```
 
+### 3.5 Bot protection for `/api/contact`
+
+> **This is not optional.** The contact form has no spam filtering of its own —
+> it was deliberately left to Cloudflare's edge. Until the two settings below
+> are on, `/api/contact` is an open endpoint that forwards to the church's
+> webhook on every valid POST.
+
+Both settings only apply to traffic through a **custom domain on your zone**.
+A `*.workers.dev` URL does not get zone-level bot protection, so the Worker
+must be on the church's own domain (§3.3) for any of this to take effect.
+
+**Bot Fight Mode** — Dashboard → your domain → **Security → Bots** → turn on
+*Bot Fight Mode*. Free on all plans. It challenges traffic that Cloudflare's
+heuristics score as automated, which handles the commodity form-spam bots.
+
+Be aware of what it does *not* do: it won't stop a low-volume scripted POST
+from a residential IP, and it isn't a rate limit. Add one:
+
+**Rate limiting rule** — Dashboard → your domain → **Security → WAF → Rate
+limiting rules** → *Create rule*:
+
+| Field | Value |
+|---|---|
+| Rule name | `contact-form-limit` |
+| If incoming requests match | `URI Path` `equals` `/api/contact` |
+| Also match | `Request Method` `equals` `POST` |
+| Rate | `5` requests per `1 minute` per `IP` |
+| Action | `Block` (or `Managed Challenge`) |
+| Duration | `1 minute` |
+
+Five a minute is far above what a person filling in a form needs and far
+below what makes a flood worth attempting. One free rate-limiting rule is
+included on the free plan, which is exactly enough for this.
+
+If spam still gets through, the next step up is **Turnstile** (Cloudflare's
+CAPTCHA alternative, free) — but that one needs code: a widget in
+`RequestForm.tsx` and a `siteverify` call in `handleContact` before the
+forward. Not wired up, since the two settings above should be sufficient.
+
+Check it's working:
+
+```sh
+# Should start returning 429/403 well before the tenth request.
+for i in $(seq 1 10); do
+  curl -s -o /dev/null -w "%{http_code} " -X POST https://<your-domain>/api/contact \
+    -H 'Content-Type: application/json' -d '{}'
+done; echo
+```
+
 ---
 
 ## 4. Worker secrets

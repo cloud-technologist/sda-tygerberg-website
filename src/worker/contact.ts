@@ -121,27 +121,36 @@ export async function handleContact(request: Request, env: ContactEnv): Promise<
     return json({ ok: false, outcome: 'invalid', errors: ['method'] }, 405);
   }
 
+  // Content-Length is a claim, not a fact: a chunked request can omit it and a
+  // junk value parses to NaN, either of which slips past a `>` test. Keep it
+  // as a cheap early-out, but let the measured size be the one that decides.
   const declaredLength = Number(request.headers.get('content-length') ?? '0');
   if (declaredLength > MAX_BODY_BYTES) {
     return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 413);
   }
 
+  let raw: ArrayBuffer;
+  try {
+    raw = await request.arrayBuffer();
+  } catch {
+    return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 400);
+  }
+  if (raw.byteLength > MAX_BODY_BYTES) {
+    return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 413);
+  }
+
   let body: RawBody;
   try {
-    const parsed = await request.json();
+    const parsed = JSON.parse(new TextDecoder().decode(raw));
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
     body = parsed as RawBody;
   } catch {
     return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 400);
   }
 
-  // Honeypot: a field hidden from people but happily filled in by form bots.
-  // Answer 200 and drop it — telling a bot it was caught only teaches it to
-  // try again differently.
-  if (str(body.website)) {
-    return json({ ok: true, outcome: 'forwarded' }, 200);
-  }
-
+  // Bot filtering is Cloudflare's job, not this handler's — Bot Fight Mode and
+  // the WAF rate-limiting rule sit in front of this route at the edge (see
+  // SETUP-INSTRUCTIONS.md §3.5).
   const { errors, clean } = validate(body);
   if (!clean) return json({ ok: false, outcome: 'invalid', errors }, 400);
 

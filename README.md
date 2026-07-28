@@ -154,13 +154,18 @@ crafted request can't skip it. The forwarded payload records `consent` and
 the church's inbox is the only place the submission survives. The privacy
 wording shown to visitors lives in `src/data/requestCopy.ts`.
 
-A hidden "website" field acts as a **honeypot** — it's positioned off-screen
-and skipped by keyboard focus, so a person never sees or fills it, but form
-bots fill every field they find. A submission with it filled gets a normal
-`200` and is silently dropped; telling a bot it was caught only teaches it to
-try again differently. There is no rate limiting beyond that (Workers has no
-shared memory between isolates) — add a KV- or D1-backed counter if spam
-becomes a real problem.
+**Spam filtering is Cloudflare's, not the app's.** The Worker validates and
+forwards; it does no bot detection of its own. Bot Fight Mode and a WAF
+rate-limiting rule sit in front of `/api/contact` at the edge, where they see
+the whole request and cost nothing to run.
+
+> Those two settings are **not on by default**, and they only apply on a
+> custom domain — a `*.workers.dev` URL gets no zone-level protection. Until
+> they're enabled, this endpoint is unprotected. See
+> [SETUP-INSTRUCTIONS.md §3.5](./SETUP-INSTRUCTIONS.md).
+
+Turnstile is the next step up if that isn't enough, and unlike the above it
+needs code: a widget in the form and a `siteverify` call before the forward.
 
 On the GitHub Pages devtest build there is no Worker at all, so
 `PUBLIC_HAS_API=false` renders the form read-only behind a notice rather than
