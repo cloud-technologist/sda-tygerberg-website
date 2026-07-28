@@ -1,0 +1,382 @@
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useLanguage } from '../../context/LanguageContext';
+import { withBase } from '../../lib/base';
+import { requestFormCopy, type RequestTopic, type TopicCopy } from '../../data/requestCopy';
+
+/**
+ * The shared request form behind /connect and /bible-studies. Posts to the
+ * Worker's /api/contact route (src/worker/contact.ts).
+ *
+ * The GitHub Pages devtest build sets PUBLIC_HAS_API=false — there's no Worker
+ * there, so the form renders read-only with a notice rather than accepting a
+ * submission it can't deliver. The var is inlined at build time, so server and
+ * client agree and hydration stays clean.
+ */
+const HAS_API = import.meta.env.PUBLIC_HAS_API !== 'false';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Mirrors LIMITS in src/worker/contact.ts, so the server can't reject a
+ *  length this form was willing to send. */
+const LIMITS = { name: 80, email: 254, phone: 40, message: 2000 } as const;
+
+type Status = 'idle' | 'submitting' | 'success' | 'error';
+
+type ContactResponse = {
+  ok?: boolean;
+  outcome?: 'forwarded' | 'not-configured' | 'invalid' | 'forward-error';
+  errors?: string[];
+};
+
+const EMPTY = { name: '', email: '', phone: '', message: '' };
+
+type FocusableField = 'name' | 'email' | 'phone' | 'consent';
+
+/**
+ * Which input each error should send focus to, in the order the fields appear
+ * on the page — so focus lands on the first thing that's actually wrong.
+ */
+const ERROR_FOCUS: Array<[error: string, field: FocusableField]> = [
+  ['name', 'name'],
+  ['contact', 'email'],
+  ['email', 'email'],
+  ['phone', 'phone'],
+  ['consent', 'consent'],
+];
+
+/** Errors this form can point at a field. Anything else needs a general message. */
+const SHOWABLE = ERROR_FOCUS.map(([error]) => error);
+
+export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicCopy }) {
+  const { lang } = useLanguage();
+  const t = requestFormCopy[lang];
+  const uid = useId();
+  const id = (part: string) => `${uid}-${part}`;
+
+  const [values, setValues] = useState(EMPTY);
+  const [consent, setConsent] = useState(false);
+  const [status, setStatus] = useState<Status>('idle');
+  const [fieldErrors, setFieldErrors] = useState<string[]>([]);
+  const [message, setMessage] = useState('');
+  /** Bumped on every failed attempt — see the focus effect below. */
+  const [attempt, setAttempt] = useState(0);
+
+  const refs = {
+    name: useRef<HTMLInputElement | null>(null),
+    email: useRef<HTMLInputElement | null>(null),
+    phone: useRef<HTMLInputElement | null>(null),
+    consent: useRef<HTMLInputElement | null>(null),
+  };
+  const alertRef = useRef<HTMLParagraphElement | null>(null);
+  const successRef = useRef<HTMLDivElement | null>(null);
+
+  const set = (key: keyof typeof EMPTY) => (e: { target: { value: string } }) =>
+    setValues((v) => ({ ...v, [key]: e.target.value }));
+
+  const reset = () => {
+    setValues(EMPTY);
+    setConsent(false);
+    setStatus('idle');
+    setFieldErrors([]);
+    setMessage('');
+  };
+
+  const fail = (errors: string[], text: string) => {
+    setFieldErrors(errors);
+    setMessage(text);
+    setStatus('error');
+    setAttempt((n) => n + 1);
+  };
+
+  /**
+   * Send focus to the first invalid field, or to the message if the problem
+   * isn't a field. Keyed on `attempt` rather than the error list: submitting
+   * twice with the same fault changes nothing in the DOM, and without this the
+   * second attempt would be met with total silence on a screen reader.
+   */
+  useEffect(() => {
+    if (attempt === 0) return;
+    const hit = ERROR_FOCUS.find(([error]) => fieldErrors.includes(error));
+    if (hit) refs[hit[1]].current?.focus();
+    else alertRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt]);
+
+  // Submitting replaces the form with the confirmation, which would drop focus
+  // to the top of the document without this.
+  useEffect(() => {
+    if (status === 'success') successRef.current?.focus();
+  }, [status]);
+
+  /** Mirrors the Worker's rules so obvious mistakes don't need a round trip. */
+  const validate = (): string[] => {
+    const errors: string[] = [];
+    if (!values.name.trim()) errors.push('name');
+    if (!values.email.trim() && !values.phone.trim()) errors.push('contact');
+    if (values.email.trim() && !EMAIL_RE.test(values.email.trim())) errors.push('email');
+    if (!consent) errors.push('consent');
+    return errors;
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (status === 'submitting') return;
+
+    const errors = validate();
+    if (errors.length > 0) {
+      fail(errors, t.errValidation);
+      return;
+    }
+
+    setStatus('submitting');
+    setFieldErrors([]);
+    setMessage('');
+
+    try {
+      const res = await fetch(withBase('/api/contact'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          name: values.name.trim(),
+          email: values.email.trim(),
+          phone: values.phone.trim(),
+          message: values.message.trim(),
+          // The checkbox state, not a constant — otherwise the Worker's consent
+          // check verifies nothing and the POPIA record traces to a literal.
+          consent,
+        }),
+      });
+
+      const data = (await res.json().catch(() => null)) as ContactResponse | null;
+
+      if (data?.ok) {
+        setStatus('success');
+        return;
+      }
+
+      if (data?.outcome === 'not-configured') fail([], t.errNotConfigured);
+      else if (data?.outcome === 'forward-error') fail([], t.errForward);
+      else if (data?.outcome === 'invalid') {
+        // A rejection on `body`, `message` or `topic` has no field to highlight;
+        // "check the highlighted fields" would highlight nothing at all.
+        const shown = (data.errors ?? []).filter((f) => SHOWABLE.includes(f));
+        fail(shown, shown.length > 0 ? t.errValidation : t.errUnexpected);
+      } else fail([], t.errNetwork);
+    } catch {
+      // Offline, DNS, a 404 body that isn't JSON — never claim it was sent.
+      fail([], t.errNetwork);
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <div
+        ref={successRef}
+        role="status"
+        tabIndex={-1}
+        className="rounded-card-lg border border-navy/20 bg-cream-card p-7 text-center focus:outline-none focus:ring-2 focus:ring-navy/25"
+      >
+        <div
+          aria-hidden="true"
+          className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-navy text-xl text-white"
+        >
+          ✓
+        </div>
+        <h2 className="mb-2 font-serif text-2xl text-ink">{t.successHeading}</h2>
+        <p className="mb-5 text-[15px] leading-relaxed text-slate">{t.successBody}</p>
+        <button
+          type="button"
+          onClick={reset}
+          className="rounded-pill border-[1.5px] border-navy px-5 py-2.5 text-[13.5px] font-bold text-navy transition-colors hover:bg-navy hover:text-white"
+        >
+          {t.successAgain}
+        </button>
+      </div>
+    );
+  }
+
+  const invalid = (field: string) => fieldErrors.includes(field);
+  const fieldClass = (field: string) =>
+    `w-full rounded-card border bg-cream-card px-4 py-3 text-[15px] text-ink placeholder:text-slate-muted/70 focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/15 ${
+      invalid(field) ? 'border-orange-hover' : 'border-strong'
+    }`;
+  const labelClass = 'mb-1.5 block text-[13.5px] font-bold text-ink';
+  const errClass = 'mt-1.5 text-[13px] font-medium text-orange-hover';
+  /** Joins the ids of whichever hints and errors are actually on screen. */
+  const describedBy = (...ids: Array<string | false | undefined>) => {
+    const list = ids.filter(Boolean) as string[];
+    return list.length > 0 ? list.join(' ') : undefined;
+  };
+
+  return (
+    <form onSubmit={submit} noValidate className="rounded-card-lg border border-subtle bg-tan/40 p-6 sm:p-7">
+      {!HAS_API && (
+        <p className="mb-6 rounded-card border border-orange/40 bg-orange/10 px-4 py-3 text-[13.5px] leading-relaxed text-ink">
+          {t.previewNotice}
+        </p>
+      )}
+
+      <fieldset disabled={!HAS_API || status === 'submitting'} className="disabled:opacity-60">
+        <div className="mb-5">
+          <label htmlFor={id('name')} className={labelClass}>
+            {t.nameLabel}
+          </label>
+          <input
+            id={id('name')}
+            ref={refs.name}
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            aria-required="true"
+            maxLength={LIMITS.name}
+            value={values.name}
+            onChange={set('name')}
+            aria-invalid={invalid('name')}
+            aria-describedby={describedBy(invalid('name') && id('name-err'))}
+            className={fieldClass('name')}
+          />
+          {invalid('name') && (
+            <p id={id('name-err')} className={errClass}>
+              {t.errName}
+            </p>
+          )}
+        </div>
+
+        <div className="mb-2 grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor={id('email')} className={labelClass}>
+              {t.emailLabel}
+            </label>
+            <input
+              id={id('email')}
+              ref={refs.email}
+              name="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              maxLength={LIMITS.email}
+              value={values.email}
+              onChange={set('email')}
+              aria-invalid={invalid('email') || invalid('contact')}
+              aria-describedby={describedBy(
+                id('contact-hint'),
+                invalid('email') && id('email-err'),
+                invalid('contact') && id('contact-err'),
+              )}
+              className={fieldClass(invalid('email') ? 'email' : 'contact')}
+            />
+            {invalid('email') && (
+              <p id={id('email-err')} className={errClass}>
+                {t.errEmail}
+              </p>
+            )}
+          </div>
+          <div>
+            <label htmlFor={id('phone')} className={labelClass}>
+              {t.phoneLabel}
+            </label>
+            <input
+              id={id('phone')}
+              ref={refs.phone}
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={LIMITS.phone}
+              value={values.phone}
+              onChange={set('phone')}
+              aria-invalid={invalid('phone') || invalid('contact')}
+              aria-describedby={describedBy(
+                id('contact-hint'),
+                invalid('phone') && id('phone-err'),
+                invalid('contact') && id('contact-err'),
+              )}
+              className={fieldClass(invalid('phone') ? 'phone' : 'contact')}
+            />
+            {invalid('phone') && (
+              <p id={id('phone-err')} className={errClass}>
+                {t.errPhone}
+              </p>
+            )}
+          </div>
+        </div>
+        <p id={id('contact-hint')} className="mb-5 text-[13px] text-slate-muted">
+          {t.contactHint}
+        </p>
+        {invalid('contact') && (
+          <p id={id('contact-err')} className={`${errClass} -mt-4 mb-5`}>
+            {t.errContact}
+          </p>
+        )}
+
+        <div className="mb-6">
+          <label htmlFor={id('message')} className={labelClass}>
+            {copy.messageLabel}{' '}
+            <span className="font-medium text-slate-muted">({t.optional})</span>
+          </label>
+          <textarea
+            id={id('message')}
+            name="message"
+            rows={5}
+            maxLength={LIMITS.message}
+            placeholder={copy.messagePlaceholder}
+            value={values.message}
+            onChange={set('message')}
+            className={`${fieldClass('message')} resize-y`}
+          />
+        </div>
+
+        <div className="mb-6 rounded-card border border-subtle bg-cream-card p-4.5">
+          <div className="mb-1.5 text-xs font-bold uppercase tracking-[.08em] text-navy">
+            {t.privacyHeading}
+          </div>
+          <p className="mb-4 text-[13.5px] leading-relaxed text-slate">{t.privacyBody}</p>
+          <label htmlFor={id('consent')} className="flex cursor-pointer items-start gap-3">
+            <input
+              id={id('consent')}
+              ref={refs.consent}
+              name="consent"
+              type="checkbox"
+              required
+              aria-required="true"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              aria-invalid={invalid('consent')}
+              aria-describedby={describedBy(invalid('consent') && id('consent-err'))}
+              className="mt-0.5 h-4.5 w-4.5 flex-none accent-navy"
+            />
+            <span className="text-[13.5px] leading-relaxed text-ink">{t.consentLabel}</span>
+          </label>
+          {invalid('consent') && (
+            <p id={id('consent-err')} className={errClass}>
+              {t.errConsent}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full rounded-pill bg-orange px-6 py-3 text-[14px] font-bold text-white transition-colors hover:bg-orange-hover disabled:cursor-not-allowed"
+        >
+          {status === 'submitting' ? t.submitting : copy.submit}
+        </button>
+      </fieldset>
+
+      {status === 'error' && message && (
+        // Keyed on the attempt so a repeated failure remounts the alert and is
+        // announced again instead of passing in silence.
+        <p
+          key={attempt}
+          ref={alertRef}
+          role="alert"
+          tabIndex={-1}
+          className="mt-5 rounded-card border border-orange-hover/40 bg-orange/10 px-4 py-3 text-[13.5px] leading-relaxed text-ink focus:outline-none focus:ring-2 focus:ring-navy/25"
+        >
+          {message}
+        </p>
+      )}
+    </form>
+  );
+}

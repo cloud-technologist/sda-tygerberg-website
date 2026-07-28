@@ -1,18 +1,144 @@
 import type { Lang } from './site';
 
-// Real names + headshots are TBA from the church board (see README "Open Items").
-// Swap `name` and `photoUrl` per person here without touching the carousel component.
+/**
+ * Department heads as confirmed by the church board, cross-checked against the
+ * "Tygerberg-Gemeente Ampsdraers 2025/2026" roster.
+ *
+ * One card per person, not one per position: several people head more than one
+ * department, so their titles are merged onto a single headshot rather than
+ * repeating the same face through the carousel. `roles` is therefore a list.
+ *
+ * Names only, by design. No phone numbers or email addresses — those were
+ * stripped site-wide for POPIA (see README "Known open items") and the
+ * /connect form is the compliant way to reach a person now.
+ *
+ * `id` (not `name`) keys the carousel — it stays stable if a name is corrected.
+ */
 export type DepartmentHead = {
+  id: string;
   name: string;
-  dept: Record<Lang, string>;
+  /** Singular job titles — each card is one person, not a department listing. */
+  roles: Record<Lang, string[]>;
   photoUrl?: string;
 };
 
+/** Photos are still TBA from the board — add `photoUrl` per person as they arrive. */
 export const departmentHeads: DepartmentHead[] = [
-  { name: '[Naam 1]', dept: { af: 'Sabbatskool', en: 'Sabbath School' } },
-  { name: '[Naam 2]', dept: { af: 'Persoonlike Bediening', en: 'Personal Ministries' } },
-  { name: '[Naam 3]', dept: { af: 'Jeug & Kinders', en: 'Youth & Children' } },
-  { name: '[Naam 4]', dept: { af: 'Musiek & Aanbidding', en: 'Music & Worship' } },
-  { name: '[Naam 5]', dept: { af: 'Gesondheidsbediening', en: 'Health Ministry' } },
-  { name: '[Naam 6]', dept: { af: 'Diakonie', en: 'Deaconry' } },
+  {
+    id: 'kerkraad',
+    name: 'Lr. Arnold Neuhoff',
+    roles: { af: ['Leraar', 'Kerkraad'], en: ['Pastor', 'Church Board'] },
+  },
+  {
+    id: 'ouderlinge',
+    name: 'Jaco van Niekerk',
+    roles: {
+      af: ['Ouderling', 'Persoonlike Bediening', 'Strategiesebeplannings-komitee'],
+      en: ['Elder', 'Personal Ministries', 'Strategic Planning Committee'],
+    },
+  },
+  {
+    id: 'diakens',
+    name: 'Craig Campion',
+    // Veiligheidsoffisier has no official head on the board's list; the head
+    // deacon carries it, so it sits here as a plain title.
+    roles: {
+      af: ['Hoofdiaken', 'Veiligheidsoffisier'],
+      en: ['Head Deacon', 'Safety Officer'],
+    },
+  },
+  {
+    id: 'diakonesse',
+    name: 'Marinda Wallace',
+    roles: { af: ['Hoofdiakones'], en: ['Head Deaconess'] },
+  },
+  {
+    id: 'sabbatskool',
+    name: 'Gustav Allmann',
+    roles: { af: ['Sabbatskool'], en: ['Sabbath School'] },
+  },
+  {
+    id: 'kinderbediening',
+    name: 'Lenie Virgin',
+    roles: {
+      af: ['Kinderbediening', 'Gemeenskapsdienste & Welsyn'],
+      en: ['Children’s Ministry', 'Community Services & Welfare'],
+    },
+  },
+  {
+    id: 'senior-jeug',
+    name: 'Monique Spammer',
+    roles: { af: ['Senior Jeugleier'], en: ['Senior Youth Leader'] },
+  },
+  {
+    id: 'junior-jeug',
+    name: 'Lisa Branders',
+    roles: { af: ['Junior Jeugleier'], en: ['Junior Youth Leader'] },
+  },
+  {
+    id: 'strewers',
+    name: 'Morné Louw',
+    roles: { af: ['Strewersleier'], en: ['Pathfinder Leader'] },
+  },
+  {
+    id: 'musiek',
+    name: 'Leonie Cloete',
+    roles: { af: ['Musiek'], en: ['Music'] },
+  },
+  {
+    id: 'tesourier',
+    name: 'Adéle Meyer',
+    roles: { af: ['Tesourier'], en: ['Treasurer'] },
+  },
+  {
+    id: 'multimedia',
+    name: 'Chris Meyer',
+    roles: {
+      af: ['Multimedia', 'Kommunikasie-verteenwoordiger'],
+      en: ['Multimedia', 'Communications Representative'],
+    },
+  },
+  {
+    id: 'gesondheidsbediening',
+    name: 'Gert Coetzee',
+    roles: {
+      af: ['Gesondheidsbediening & APO'],
+      en: ['Health Ministry & APO'],
+    },
+  },
+  {
+    id: 'gebed',
+    name: 'Peter Wallace',
+    roles: { af: ['Gebedskoördineerder'], en: ['Prayer Coordinator'] },
+  },
+  {
+    id: 'kerkklerk',
+    name: 'Sanet Stevens',
+    roles: { af: ['Kerkklerk'], en: ['Church Clerk'] },
+  },
+  {
+    id: 'vrouebediening',
+    name: 'Linda Jennings',
+    roles: { af: ['Vrouebediening'], en: ['Women’s Ministry'] },
+  },
+  {
+    id: 'mannebediening',
+    name: 'Marius Louw',
+    roles: { af: ['Mannebediening'], en: ['Men’s Ministry'] },
+  },
+  {
+    id: 'boukomitee',
+    name: 'Bertie Hoffman',
+    roles: { af: ['Boukomitee'], en: ['Building Committee'] },
+  },
+  {
+    id: 'ontspanningskomitee',
+    name: 'Hanlie Tolmay',
+    roles: { af: ['Ontspanningskomitee'], en: ['Recreation Committee'] },
+  },
+  {
+    id: 'gesinsbediening',
+    name: 'Louw Familie',
+    roles: { af: ['Gesinsbediening'], en: ['Family Ministry'] },
+  },
 ];

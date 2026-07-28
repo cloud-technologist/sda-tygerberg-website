@@ -5,6 +5,9 @@ Seventh-day Adventist Church (Boston, Bellville, Cape Town). Built from the
 `SDA_Tygerberg` design handoff — see that package's `README.md` and
 `reference/design-system-readme.md` for the original visual spec.
 
+Setting this up from scratch (GitHub, Cloudflare, Google Cloud, the contact
+webhook)? Start with [`SETUP-INSTRUCTIONS.md`](./SETUP-INSTRUCTIONS.md).
+
 ## Stack
 
 - **[Astro](https://astro.build)** (static output) + **React islands** for the
@@ -116,6 +119,58 @@ to diagnose a badge that isn't behaving. A malformed cron or unknown
 timezone fails *closed* — `invalid-schedule`, zero API calls — so a typo
 costs nothing rather than quietly spending quota.
 
+## Contact form (`/connect`, `/bible-studies`)
+
+Two pages collect requests from visitors: **Verbind** (a general enquiry) and
+**Bybelstudies** (a free Bible/baptismal study). They're the same shell with
+different copy — `src/components/react/RequestPage.tsx`, driven by
+`src/data/requestCopy.ts`.
+
+Both post to `POST /api/contact` (`src/worker/contact.ts`), which validates
+the submission and forwards it as JSON to whatever URL is in the
+`CONTACT_WEBHOOK_URL` Worker secret. Any endpoint that accepts a JSON POST
+works — Zapier, Make, an Apps Script, n8n, a church-inbox webhook — which
+keeps the church off any single vendor. **Set it as a Worker secret, not a
+build-time variable**: it's a delivery address, and a public one invites spam.
+
+The response `outcome` tells you what happened, the same way the LIVE badge's
+`source` does:
+
+| `outcome` | Meaning |
+|---|---|
+| `forwarded` | Accepted by the webhook — the only case the visitor is told it was sent |
+| `not-configured` | No `CONTACT_WEBHOOK_URL` set; the form says so rather than pretending |
+| `invalid` | Failed validation; `errors` lists the offending field names |
+| `forward-error` | The webhook timed out or refused — the visitor is asked to retry |
+
+Success is never reported on a delivery that didn't happen: leaving someone
+waiting for a reply that was never coming is worse than showing an error.
+
+**POPIA.** The form asks for the minimum needed to reply (a name, plus an
+email *or* a phone number — not both) and will not submit without an
+explicitly ticked consent box; consent is validated server-side too, so a
+crafted request can't skip it. The forwarded payload records `consent` and
+`submittedAt`, because POPIA consent has to be demonstrable after the fact and
+the church's inbox is the only place the submission survives. The privacy
+wording shown to visitors lives in `src/data/requestCopy.ts`.
+
+**Spam filtering is Cloudflare's, not the app's.** The Worker validates and
+forwards; it does no bot detection of its own. Bot Fight Mode and a WAF
+rate-limiting rule sit in front of `/api/contact` at the edge, where they see
+the whole request and cost nothing to run.
+
+> Those two settings are **not on by default**, and they only apply on a
+> custom domain — a `*.workers.dev` URL gets no zone-level protection. Until
+> they're enabled, this endpoint is unprotected. See
+> [SETUP-INSTRUCTIONS.md §3.5](./SETUP-INSTRUCTIONS.md).
+
+Turnstile is the next step up if that isn't enough, and unlike the above it
+needs code: a widget in the form and a `siteverify` call before the forward.
+
+On the GitHub Pages devtest build there is no Worker at all, so
+`PUBLIC_HAS_API=false` renders the form read-only behind a notice rather than
+letting someone fill in a form that can't submit.
+
 ## Branch strategy
 
 - **`dev`** — integration branch. Feature PRs target `dev`; every merge
@@ -136,7 +191,8 @@ Two independent workflows under `.github/workflows/`:
 | `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath, and `PUBLIC_HAS_API=false` so the LIVE badge doesn't poll a Worker route that doesn't exist here. |
 | `deploy-production-cloudflare.yml` | Cloudflare Workers | push to `main`, or manual | The real site, full Worker + `/api/*`. Gated by the `dev` -> `main` promotion PR described above; manual dispatch is available for a re-deploy without a new merge. |
 
-One-time setup:
+One-time setup — full walkthrough in
+[`SETUP-INSTRUCTIONS.md`](./SETUP-INSTRUCTIONS.md), in short:
 
 - **GitHub Pages**: in the repo's Settings → Pages, set "Build and
   deployment" → Source to **GitHub Actions**.
@@ -161,7 +217,8 @@ components:
 | `src/data/homeCopy.ts` | Homepage bilingual copy + weekly ministry schedule |
 | `src/data/beliefsCopy.ts` | Beliefs-page header copy |
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
-| `src/data/departmentHeads.ts` | Department-head carousel data — **placeholder names/photos, TBA from the board** |
+| `src/data/departmentHeads.ts` | Department-head carousel data — real names from the board's 2025/2026 Ampsdraers roster; **photos still TBA** |
+| `src/data/requestCopy.ts` | Copy for the `/connect` and `/bible-studies` request pages, including the POPIA privacy/consent wording |
 | `src/data/resources.ts` | External resource links (logos self-hosted under `public/logos/`) |
 | `src/data/giving.ts` | EFT banking details shown in the Give card's expandable panel |
 
@@ -170,15 +227,16 @@ components:
 These were explicitly flagged as unresolved by the church board in the
 original handoff and are **not** blockers for this MVP:
 
-1. **Department head names + photos** — placeholders (`[Naam 1]`…`[Naam 6]`)
-   in `src/data/departmentHeads.ts`; swap in real `name`/`photoUrl` per person
-   once supplied.
-2. **"Get involved" contacts** — Connect, Bible Studies, and the banking
-   contact line were removed for POPIA compliance (see `src/data/giving.ts`,
-   `GetInvolved.tsx`). Give still shows real EFT banking details
-   (`src/data/giving.ts`) in an expandable panel. Needs a compliant contact
-   mechanism (form with consent, dedicated inbox, etc.) before Connect/Bible
-   Studies/a contact channel can be restored.
+1. **Department head photos** — names are now real (from the board's
+   "Ampsdraers 2025/2026" roster), but every card still shows the striped
+   placeholder. Add `photoUrl` per person in `src/data/departmentHeads.ts` as
+   headshots arrive; no component change needed.
+2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies now
+   lead to `/connect` and `/bible-studies`, which collect a request behind an
+   explicit POPIA consent checkbox and post it to `/api/contact` (see
+   "Contact form" above). Still needs `CONTACT_WEBHOOK_URL` set as a Worker
+   secret before submissions go anywhere. The banking contact line stays
+   removed — Give shows account details only.
 3. **Weekly ministry schedule** — currently 4 fixed entries in
    `homeCopy.ts`; move to a CMS/KV-backed endpoint if it starts changing
    seasonally (the Worker is already the natural place to add that route).
