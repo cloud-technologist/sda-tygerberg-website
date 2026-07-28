@@ -1,5 +1,5 @@
 import { LanguageProvider, useLanguage } from '../../context/LanguageContext';
-import { SITE, SERVICE_TIMES } from '../../data/site';
+import { SITE, SERVICE_TIMES, serviceRange } from '../../data/site';
 import { requestFormCopy, requestTopics, type RequestTopic } from '../../data/requestCopy';
 import { SubPageHeader } from './SubPageHeader';
 import { SubPageFooter } from './SubPageFooter';
@@ -22,6 +22,8 @@ function RequestContent({ topic }: { topic: RequestTopic }) {
   return (
     <div className="min-h-screen font-sans text-ink">
       <SubPageHeader backHome={t.backHome} />
+
+      <main id="main">
 
       <section className="mx-auto max-w-[720px] px-5 pb-10 pt-14 text-center sm:px-7 sm:pt-16">
         <div className="mb-4.5 text-xs font-bold uppercase tracking-[.16em] text-orange">
@@ -67,7 +69,7 @@ function RequestContent({ topic }: { topic: RequestTopic }) {
               <dd className="text-[14.5px] leading-relaxed text-slate">
                 {SERVICE_TIMES.map((s) => (
                   <span key={s.en} className="block">
-                    {s[lang]} · {s.time}
+                    {s[lang]} · {serviceRange(s)}
                   </span>
                 ))}
               </dd>
@@ -84,6 +86,8 @@ function RequestContent({ topic }: { topic: RequestTopic }) {
           </a>
         </div>
       </section>
+
+      </main>
 
       <SubPageFooter backHome={t.backHome} />
     </div>

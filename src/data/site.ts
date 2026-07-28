@@ -22,8 +22,33 @@ export const SITE = {
   beliefsPdfPath: '/SDA-28-Fundamental-Beliefs.pdf',
 } as const;
 
-export const SERVICE_TIMES: { af: string; en: string; time: string }[] = [
-  { af: 'Sabbatskool', en: 'Sabbath School', time: '09:30' },
-  { af: 'Lesstudie', en: 'Lesson Study', time: '10:00' },
-  { af: 'Hoofdiens', en: 'Divine Service', time: '11:00' },
+export type ServiceTime = { af: string; en: string; start: string; end: string };
+
+/**
+ * The Sabbath morning, in order. Times confirmed by the church.
+ *
+ * Both ends are kept because a start on its own doesn't tell a first-time
+ * visitor whether they are committing to half an hour or to the whole morning.
+ */
+export const SERVICE_TIMES: ServiceTime[] = [
+  { af: 'Sabbatskool', en: 'Sabbath School', start: '09:30', end: '10:00' },
+  { af: 'Lesstudie', en: 'Lesson Study', start: '10:00', end: '10:45' },
+  { af: 'Hoofdiens', en: 'Divine Service', start: '11:00', end: '12:00' },
 ];
+
+/** "09:30 – 10:00", matching how the midweek schedule already reads. */
+export const serviceRange = (s: ServiceTime) => `${s.start} – ${s.end}`;
+
+/**
+ * When the building itself is open on a Sabbath, per the church.
+ *
+ * Deliberately wider than the services above and deliberately not derived from
+ * them: the doors open half an hour before Sabbath School and stay open half an
+ * hour after the Divine Service ends. This is what `openingHoursSpecification`
+ * means in structured data — when someone can arrive and find the place open,
+ * not when the programme runs.
+ */
+export const SABBATH_HOURS = {
+  opens: '09:00',
+  closes: '12:30',
+} as const;

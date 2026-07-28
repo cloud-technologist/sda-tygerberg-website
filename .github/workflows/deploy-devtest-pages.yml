@@ -50,6 +50,12 @@ jobs:
           # the poll rather than 404 on a loop; the LIVE badge simply never
           # shows on devtest.
           PUBLIC_HAS_API: 'false'
+          # This preview is served from a public github.io URL, and robots.txt
+          # can't reach it — that file is only honoured at a domain root, and
+          # the root here belongs to github.io. A noindex meta is the only way
+          # to keep the preview out of search results and stop it competing
+          # with production. Unset elsewhere, so production indexes normally.
+          PUBLIC_INDEXABLE: 'false'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

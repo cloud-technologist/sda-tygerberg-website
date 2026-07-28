@@ -6,7 +6,11 @@ import tailwindcss from '@tailwindcss/vite';
 // Pages project site; leave unset for the Cloudflare production deploy,
 // which serves from the domain root.
 export default defineConfig({
-  site: 'https://tygerbergsda.church',
+  // The origin every absolute URL is built from — canonical tags, Open Graph
+  // URLs and the sitemap. This is the domain the Worker actually serves (see
+  // `routes` in wrangler.jsonc); change it here and nowhere else if the church
+  // moves to its own domain.
+  site: 'https://tygerberg-sda.cloudkid.link',
   base: process.env.ASTRO_BASE || '/',
   output: 'static',
   integrations: [react()],

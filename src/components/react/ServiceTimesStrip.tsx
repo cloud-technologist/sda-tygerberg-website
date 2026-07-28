@@ -1,6 +1,6 @@
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
-import { SERVICE_TIMES } from '../../data/site';
+import { SERVICE_TIMES, serviceRange } from '../../data/site';
 
 export function ServiceTimesStrip() {
   const { lang } = useLanguage();
@@ -14,7 +14,7 @@ export function ServiceTimesStrip() {
         </span>
         {SERVICE_TIMES.map((entry) => (
           <span key={entry.en} className="text-sm sm:border-l sm:border-white/20 sm:px-5 sm:py-1">
-            {entry[lang]} <strong className="text-base">{entry.time}</strong>
+            {entry[lang]} <strong className="text-base">{serviceRange(entry)}</strong>
           </span>
         ))}
       </div>

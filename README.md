@@ -107,10 +107,28 @@ Setup is two **Worker secrets** — Cloudflare dashboard → Workers & Pages →
 | `YOUTUBE_API_KEY` | A Google Cloud API key with **YouTube Data API v3** enabled |
 | `YOUTUBE_CHANNEL_ID` | `UCtZlioPBBORWMMMSJ9BE1Wg` |
 
-These must be **Worker secrets, not GitHub Actions secrets**. Actions secrets
-exist only at build time and would never reach the Worker; worse, exposing
-the key to the client build would publish it to anyone viewing source. Until
-both are set the endpoint reports `not-configured` and the badge stays hidden.
+These end up as **Worker secrets**. An Actions secret on its own never reaches
+the Worker — it exists only inside the workflow run — so setting one in GitHub
+and stopping there leaves the badge hidden with nothing to explain why.
+
+The production workflow bridges the two: `deploy-production-cloudflare.yml`
+lists both names under the deploy step's `secrets:` input and supplies their
+values through that step's `env`, and `wrangler-action` runs
+`wrangler secret put` for each before deploying. So storing them as repo
+secrets *is* enough, but only because the workflow explicitly carries them
+across. Setting them directly on the Worker (dashboard or
+`wrangler secret put`) works too.
+
+The `env` block is scoped to the deploy step, deliberately: the key is never
+present during `npm run build`, so it cannot reach the client bundle.
+
+Until both are set the endpoint reports `not-configured` and the badge stays
+hidden.
+
+Note the endpoint checks the *window* before the credentials, so on any day
+except Saturday it answers `outside-window` whether or not the secrets are
+configured. To confirm they arrived, check the deploy run's log for the secret
+upload rather than curling the endpoint mid-week.
 
 `curl https://tygerberg-sda.cloudkid.link/api/live-status` echoes back the
 resolved window and a `source` field (`youtube-api`, `outside-window`,
@@ -213,14 +231,52 @@ components:
 
 | File | What it holds |
 |---|---|
-| `src/data/site.ts` | Address, map coordinates, external links |
-| `src/data/homeCopy.ts` | Homepage bilingual copy + weekly ministry schedule |
+| `src/data/site.ts` | Address, map coordinates, external links, Sabbath service times and building hours |
+| `src/data/homeCopy.ts` | Homepage bilingual copy + weekly ministry schedule + the "your first visit" answers |
 | `src/data/beliefsCopy.ts` | Beliefs-page header copy |
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
 | `src/data/departmentHeads.ts` | Department-head carousel data — real names from the board's 2025/2026 Ampsdraers roster; **photos still TBA** |
 | `src/data/requestCopy.ts` | Copy for the `/connect` and `/bible-studies` request pages, including the POPIA privacy/consent wording |
 | `src/data/resources.ts` | External resource links (logos self-hosted under `public/logos/`) |
 | `src/data/giving.ts` | EFT banking details shown in the Give card's expandable panel |
+
+## Church symbol
+
+The official Seventh-day Adventist symbol — the open Bible, the cross, and the
+flame — lives at `src/assets/sda-symbol.svg` and is the only copy. It is
+imported as raw markup (`?raw`) rather than as an `<img>` so it inherits
+`currentColor`: navy on the cream headers, cream on the navy footers, from one
+file.
+
+Two derived files are generated from it and committed rather than built:
+`public/favicon.svg` (solid navy) and `public/apple-touch-icon.png` (reversed
+out of navy). `public/og-image.png` embeds it too. See `tools/README.md` for
+how to regenerate them.
+
+The symbol is a trademark of the General Conference of Seventh-day Adventists,
+used here by a member congregation. It is reproduced from the official artwork
+and only recoloured — the identity system governs its proportions, so it must
+never be redrawn or distorted to fit a layout.
+
+## Findability
+
+`src/layouts/Layout.astro` emits a canonical URL, Open Graph and Twitter Card
+tags, and a `Church` JSON-LD block built by `src/lib/structuredData.ts` from
+`src/data/site.ts`. `astro.config.mjs`'s `site` is the single source for the
+production origin; change it there and canonical tags, OG URLs and the sitemap
+all follow.
+
+Two things worth knowing:
+
+- **The sitemap is not advertised.** Cloudflare serves a managed `robots.txt`
+  on this zone and it carries no `Sitemap:` directive, so `/sitemap.xml` has to
+  be submitted once in [Google Search Console](https://search.google.com/search-console)
+  before it does anything. This is a manual step nobody will be prompted for.
+- **The devtest preview is publicly crawlable** and `robots.txt` cannot cover
+  it — that file is only honoured at a domain root, and the root there belongs
+  to `github.io`. The Pages workflow sets `PUBLIC_INDEXABLE=false`, which emits
+  `noindex,nofollow`, and canonical tags on that build point at production. Both
+  exist to stop the preview competing with the real site in search results.
 
 ## Known open items (carried over from the design handoff)
 
@@ -245,3 +301,23 @@ original handoff and are **not** blockers for this MVP:
    secrets (see "LIVE badge" above). Nothing else depends on them.
 5. ~~**Mobile hamburger nav**~~ — resolved: below the `lg` breakpoint the
    header nav collapses behind a hamburger button (`src/components/react/Header.tsx`).
+6. **"Your first visit" answers** — the section is built
+   (`src/components/react/FirstVisit.tsx`) and hides itself while
+   `homeCopy.firstVisit` is empty, which it currently is. Nothing here is
+   invented; the board needs to answer, in both languages:
+
+   - Where do visitors park?
+   - Is there a children's programme, and for what ages?
+   - Is the building wheelchair accessible?
+   - What do people usually wear?
+   - Are services in Afrikaans, English, or both?
+
+   Adding entries to `firstVisit` in `src/data/homeCopy.ts` publishes the
+   section; no component change needed.
+7. **Sitemap submission** — `/sitemap.xml` exists but nothing points crawlers
+   at it (see "Findability"). Someone with access needs to submit it once in
+   Google Search Console.
+8. **A photograph for the social card** — `public/og-image.png` is currently a
+   typographic card composed from the symbol and the design tokens. A photo of
+   the building or the congregation would be better and is a one-file swap
+   (`tools/README.md`).

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
-import { SERVICE_TIMES, SITE } from '../../data/site';
+import { SERVICE_TIMES, SITE, serviceRange } from '../../data/site';
 import { withBase } from '../../lib/base';
 
 export function VisitMap() {
@@ -53,7 +53,7 @@ export function VisitMap() {
             {SERVICE_TIMES.map((entry) => (
               <div key={entry.en} className="flex justify-between text-sm">
                 <span className="text-slate">{entry[lang]}</span>
-                <span className="font-bold text-ink">Sat {entry.time}</span>
+                <span className="font-bold text-ink">Sat {serviceRange(entry)}</span>
               </div>
             ))}
           </div>

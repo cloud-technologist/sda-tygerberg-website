@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { withBase } from '../../lib/base';
@@ -7,6 +7,7 @@ export function BeliefsSummary() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
   const [openIndex, setOpenIndex] = useState(0);
+  const panelId = useId();
 
   return (
     <section id="glo" className="mx-auto grid max-w-content scroll-mt-24 grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-13 px-7 py-16">
@@ -32,6 +33,8 @@ export function BeliefsSummary() {
               <button
                 type="button"
                 onClick={() => setOpenIndex(open ? -1 : i)}
+                aria-expanded={open}
+                aria-controls={`${panelId}-${i}`}
                 className="flex w-full items-center justify-between gap-4 px-5.5 py-5 text-left font-inherit"
               >
                 <span className="flex items-center gap-3.5">
@@ -40,10 +43,17 @@ export function BeliefsSummary() {
                   </span>
                   <span className="font-serif text-[23px] text-ink">{title}</span>
                 </span>
-                <span className="flex-none text-2xl font-light text-navy">{open ? '–' : '+'}</span>
+                {/* Decorative: aria-expanded already conveys the state, and a
+                    screen reader reading "plus" adds nothing. */}
+                <span aria-hidden className="flex-none text-2xl font-light text-navy">
+                  {open ? '–' : '+'}
+                </span>
               </button>
               {open && (
-                <div className="px-5.5 pb-5.5 pl-15 text-[15px] leading-relaxed text-slate">
+                <div
+                  id={`${panelId}-${i}`}
+                  className="px-5.5 pb-5.5 pl-15 text-[15px] leading-relaxed text-slate"
+                >
                   {t.beliefDescs[i]}
                 </div>
               )}

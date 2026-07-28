@@ -6,6 +6,13 @@ name: Deploy production (Cloudflare)
 #   CLOUDFLARE_API_TOKEN   (Workers Scripts + Account Settings: Read/Edit)
 #   CLOUDFLARE_ACCOUNT_ID
 # Set via Settings -> Secrets and variables -> Actions.
+#
+# Two further repo secrets feed the LIVE badge:
+#   YOUTUBE_API_KEY
+#   YOUTUBE_CHANNEL_ID
+# The deploy step uploads them to the Worker (see `secrets:` below). Both must
+# be present: the step passes them by name, so removing one from repo settings
+# without also removing it here uploads an empty value.
 on:
   push:
     branches: [main]
@@ -55,3 +62,20 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+          # Names only. The action runs `wrangler secret put` for each before
+          # deploying, reading the value from this step's `env` below.
+          #
+          # This is the bridge between the two kinds of secret, and it is easy
+          # to get wrong: an Actions secret is visible to the workflow, not to
+          # the Worker. `src/worker/liveStatus.ts` reads these off the Worker's
+          # runtime `env`, so without this block they are set in GitHub, absent
+          # in production, and the LIVE badge stays hidden with no error
+          # anywhere to explain why.
+          secrets: |
+            YOUTUBE_API_KEY
+            YOUTUBE_CHANNEL_ID
+        env:
+          # Scoped to this step, so the key is never present during
+          # `npm run build` above and cannot reach the client bundle.
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
