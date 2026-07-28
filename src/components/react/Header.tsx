@@ -50,10 +50,10 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-subtle bg-cream/90 backdrop-blur">
       <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-5 py-3">
         <a href="#top" className="flex items-center gap-3">
-          <Logo />
+          <Logo size={46} />
           <div className="leading-tight">
-            <div className="font-serif text-lg font-semibold text-navy">Tygerberg</div>
-            <div className="text-[8.5px] uppercase tracking-[.14em] text-slate-muted">
+            <div className="font-serif text-2xl font-semibold leading-tight text-navy">Tygerberg</div>
+            <div className="text-[10.5px] uppercase tracking-[.14em] text-slate-muted">
               SDA Kerk · Kaapstad
             </div>
           </div>
