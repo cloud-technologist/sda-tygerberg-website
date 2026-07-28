@@ -7,8 +7,18 @@ import type { Lang } from '../../data/site';
 const AUTOPLAY_MS = 4200;
 const GAP_PX = 20;
 const TRANSITION = 'transform 520ms cubic-bezier(.22,.61,.36,1)';
-/** Drag further than this and letting go commits to the next/previous card. */
-const SWIPE_COMMIT_PX = 60;
+
+/**
+ * A gesture this brief is a flick: commit on its direction, whatever distance
+ * it covered. Cards are most of the screen on a phone, so judging a flick on
+ * distance means asking for a long deliberate drag — and silently swallowing
+ * the quick thumb-flick people actually use.
+ */
+const FLICK_MS = 300;
+/** Below this it is a tap or a jitter, however brief. */
+const MIN_FLICK_PX = 10;
+/** For anything slower, how much of a card must be covered to commit. */
+const COMMIT_RATIO = 0.22;
 
 const COUNT = departmentHeads.length;
 
@@ -30,12 +40,14 @@ function slotOf(index: number, active: number) {
 }
 
 /**
- * Slots that can be on screen at some breakpoint (cards are 72% wide on
- * mobile, 31% on desktop). Only these animate: the one card per step that
- * wraps round the back of the ring jumps the full width of the roster, and
- * that jump must not be seen crossing the viewport.
+ * Cards wrap round the back of the ring between slot -(COUNT/2 - 1) and
+ * +COUNT/2, jumping the full width of the roster. That jump must never be
+ * seen crossing the viewport, so anything out here moves without animating.
+ * Everything comfortably inside does animate — wide enough that a multi-card
+ * drag still slides its cards in and out rather than popping them.
  */
-const isVisibleSlot = (slot: number) => slot >= -1 && slot <= 4;
+const ANIMATE_SPAN = Math.max(2, Math.floor(COUNT / 2) - 2);
+const isAnimatedSlot = (slot: number) => slot >= -ANIMATE_SPAN && slot <= ANIMATE_SPAN;
 
 const CARD_WIDTH = 'w-[72%] sm:w-[45%] lg:w-[31%]';
 
@@ -80,9 +92,18 @@ export function AboutCarousel() {
   const [drag, setDrag] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const dragFrom = useRef<number | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const dragFrom = useRef<{ x: number; at: number } | null>(null);
 
-  const step = (dir: 1 | -1) => setActive((a) => (((a + dir) % COUNT) + COUNT) % COUNT);
+  const advance = (by: number) =>
+    setActive((a) => (((a + by) % COUNT) + COUNT) % COUNT);
+  const step = (dir: 1 | -1) => advance(dir);
+
+  /** Distance one step moves: a card plus the gap after it. */
+  const stepPx = () => {
+    const card = trackRef.current?.querySelector<HTMLElement>('[data-card]');
+    return card ? card.offsetWidth + GAP_PX : 0;
+  };
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -113,21 +134,52 @@ export function AboutCarousel() {
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    dragFrom.current = e.clientX;
+    dragFrom.current = { x: e.clientX, at: performance.now() };
     e.currentTarget.setPointerCapture(e.pointerId);
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (dragFrom.current === null) return;
-    setDrag(e.clientX - dragFrom.current);
+    if (!dragFrom.current) return;
+    setDrag(e.clientX - dragFrom.current.x);
   };
 
   const onPointerUp = () => {
-    if (dragFrom.current === null) return;
+    const from = dragFrom.current;
+    if (!from) return;
     dragFrom.current = null;
-    if (drag <= -SWIPE_COMMIT_PX) step(1);
-    else if (drag >= SWIPE_COMMIT_PX) step(-1);
+
+    const dx = drag;
+    const width = stepPx();
+    setDrag(0);
+
+    if (width > 0) {
+      // Land where the finger actually left off. Committing a single card no
+      // matter how far the drag went makes a long swipe rubber-band backwards:
+      // the cards track your thumb across three cards, then snap back to one.
+      let by = Math.round(-dx / width);
+
+      if (by === 0) {
+        // Too short to round up to a card, but still deliberate — either a
+        // quick flick, which never had time to cover the distance, or a slower
+        // drag that got a decent way across.
+        const flicked =
+          performance.now() - from.at < FLICK_MS && Math.abs(dx) > MIN_FLICK_PX;
+        if (flicked || Math.abs(dx) > width * COMMIT_RATIO) by = dx < 0 ? 1 : -1;
+      }
+
+      if (by !== 0) advance(by);
+    }
+
+    if (!reduceMotion) resetTimer();
+  };
+
+  /**
+   * The browser has claimed the gesture — a vertical page scroll, usually.
+   * Snap back rather than commit: the visitor was not swiping the carousel.
+   */
+  const onPointerCancel = () => {
+    dragFrom.current = null;
     setDrag(0);
     if (!reduceMotion) resetTimer();
   };
@@ -166,11 +218,12 @@ export function AboutCarousel() {
           </button>
 
           <div
+            ref={trackRef}
             aria-roledescription="carousel"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
+            onPointerCancel={onPointerCancel}
             // Vertical panning stays with the page; horizontal is ours to read
             // as a swipe.
             className="relative touch-pan-y overflow-hidden pb-2"
@@ -181,10 +234,11 @@ export function AboutCarousel() {
 
             {departmentHeads.map((head, index) => {
               const slot = slotOf(index, active);
-              const animate = !drag && !reduceMotion && isVisibleSlot(slot);
+              const animate = !drag && !reduceMotion && isAnimatedSlot(slot);
               return (
                 <div
                   key={head.id}
+                  data-card
                   className={`absolute left-0 top-0 h-full ${CARD_WIDTH}`}
                   style={{
                     // `100%` is the card's own width, so the step stays correct
