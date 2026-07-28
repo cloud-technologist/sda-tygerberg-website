@@ -89,11 +89,24 @@ export function AboutCarousel() {
   const t = homeCopy[lang];
 
   const [active, setActive] = useState(0);
-  const [drag, setDrag] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const dragFrom = useRef<{ x: number; at: number } | null>(null);
+
+  /**
+   * How far the finger has travelled, written straight to the DOM as a custom
+   * property the cards read.
+   *
+   * Deliberately not React state. State would re-render all twenty cards on
+   * every pointermove, and on a phone React falls far enough behind the
+   * gesture that the commit handler reads a distance of zero for a swipe that
+   * plainly happened — the flick is then discarded as a tap.
+   */
+  const setOffset = (px: number) => {
+    trackRef.current?.style.setProperty('--drag', `${px}px`);
+  };
 
   const advance = (by: number) =>
     setActive((a) => (((a + by) % COUNT) + COUNT) % COUNT);
@@ -134,24 +147,32 @@ export function AboutCarousel() {
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    dragFrom.current = { x: e.clientX, at: performance.now() };
+    // `timeStamp` is when the browser saw the event, not when this handler got
+    // to run. On a busy main thread those are far apart, and a flick judged on
+    // handler time reads as a slow, deliberate drag and gets rejected.
+    dragFrom.current = { x: e.clientX, at: e.timeStamp };
+    setOffset(0);
+    setDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!dragFrom.current) return;
-    setDrag(e.clientX - dragFrom.current.x);
+    setOffset(e.clientX - dragFrom.current.x);
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     const from = dragFrom.current;
     if (!from) return;
     dragFrom.current = null;
 
-    const dx = drag;
+    // Both read off the event itself, so neither can lag behind the finger.
+    const dx = e.clientX - from.x;
+    const elapsed = e.timeStamp - from.at;
     const width = stepPx();
-    setDrag(0);
+    setOffset(0);
+    setDragging(false);
 
     if (width > 0) {
       // Land where the finger actually left off. Committing a single card no
@@ -163,8 +184,7 @@ export function AboutCarousel() {
         // Too short to round up to a card, but still deliberate — either a
         // quick flick, which never had time to cover the distance, or a slower
         // drag that got a decent way across.
-        const flicked =
-          performance.now() - from.at < FLICK_MS && Math.abs(dx) > MIN_FLICK_PX;
+        const flicked = elapsed < FLICK_MS && Math.abs(dx) > MIN_FLICK_PX;
         if (flicked || Math.abs(dx) > width * COMMIT_RATIO) by = dx < 0 ? 1 : -1;
       }
 
@@ -180,7 +200,8 @@ export function AboutCarousel() {
    */
   const onPointerCancel = () => {
     dragFrom.current = null;
-    setDrag(0);
+    setOffset(0);
+    setDragging(false);
     if (!reduceMotion) resetTimer();
   };
 
@@ -234,7 +255,7 @@ export function AboutCarousel() {
 
             {departmentHeads.map((head, index) => {
               const slot = slotOf(index, active);
-              const animate = !drag && !reduceMotion && isAnimatedSlot(slot);
+              const animate = !dragging && !reduceMotion && isAnimatedSlot(slot);
               return (
                 <div
                   key={head.id}
@@ -242,8 +263,10 @@ export function AboutCarousel() {
                   className={`absolute left-0 top-0 h-full ${CARD_WIDTH}`}
                   style={{
                     // `100%` is the card's own width, so the step stays correct
-                    // at every breakpoint without measuring anything.
-                    transform: `translateX(calc(${slot} * (100% + ${GAP_PX}px) + ${drag}px))`,
+                    // at every breakpoint without measuring anything. `--drag`
+                    // is set on the track during a swipe, moving every card
+                    // together without going back through React.
+                    transform: `translateX(calc(${slot} * (100% + ${GAP_PX}px) + var(--drag, 0px)))`,
                     transition: animate ? TRANSITION : 'none',
                   }}
                 >
