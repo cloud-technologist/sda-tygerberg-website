@@ -8,21 +8,62 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   html, body { margin: 0; padding: 0; height: 100%; }
-  #map { width: 100%; height: 100%; }
+  #map { width: 100%; height: 100%; background: #eee7d8; }
   .leaflet-popup-content { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13.5px; color: #17252e; }
   .leaflet-popup-content b { color: #0b3d54; }
+
+  /*
+   * The marker is the church's own symbol rather than Leaflet's default blue
+   * teardrop. A cream ring lifts the navy disc off the map tiles, which run
+   * from pale road fill to mid-green parkland.
+   */
+  .church-marker {
+    border-radius: 50%;
+    background: #f6f2e9;
+    box-shadow: 0 2px 8px rgba(7, 42, 59, .45);
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <script>
   const lat = -33.8974, lng = 18.6235;
-  const map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 16);
+
+  /*
+   * One-finger dragging is off on touch devices, and the wheel never zooms.
+   *
+   * This map sits in an iframe partway down a long page. With dragging on, a
+   * thumb that lands on the map pans it instead of scrolling the page, and the
+   * visitor is stuck. That is what the old "tap to interact" overlay existed to
+   * prevent — disabling the gesture that traps them removes the need to cover
+   * the map with a button explaining itself. Zoom buttons still work, and the
+   * directions links above the map handle real navigation.
+   *
+   * Mouse dragging stays on: a desktop drag doesn't compete with page scroll.
+   */
+  const map = L.map('map', {
+    scrollWheelZoom: false,
+    dragging: !L.Browser.mobile,
+    tap: false
+  }).setView([lat, lng], 16);
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19
   }).addTo(map);
-  L.marker([lat, lng]).addTo(map)
+
+  // Points at favicon.svg rather than repeating the artwork: that file is
+  // already the official mark, and a relative path resolves correctly both at
+  // the domain root and under the GitHub Pages base path.
+  const icon = L.icon({
+    iconUrl: 'favicon.svg',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -18],
+    className: 'church-marker'
+  });
+
+  L.marker([lat, lng], { icon, alt: 'Tygerberg SDA Church' }).addTo(map)
     .bindPopup('<b>Tygerberg SDA Church</b><br>54 Boston St, Boston, Cape Town, 7530')
     .openPopup();
 </script>
