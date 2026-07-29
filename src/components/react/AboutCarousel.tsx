@@ -3,6 +3,13 @@ import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { departmentHeads, type DepartmentHead } from '../../data/departmentHeads';
 import type { Lang } from '../../data/site';
+import { withBase } from '../../lib/base';
+import {
+  cdnImageUrl,
+  cdnSrcset,
+  HEADSHOT_SIZES,
+  IMAGE_CDN_ENABLED,
+} from '../../lib/cdnImage';
 
 const AUTOPLAY_MS = 4200;
 const GAP_PX = 20;
@@ -49,21 +56,94 @@ function slotOf(index: number, active: number) {
 const ANIMATE_SPAN = Math.max(2, Math.floor(COUNT / 2) - 2);
 const isAnimatedSlot = (slot: number) => slot >= -ANIMATE_SPAN && slot <= ANIMATE_SPAN;
 
+// Changing this invalidates HEADSHOT_SIZES in src/lib/cdnImage.ts, which is
+// what tells the browser which srcset candidate to download.
 const CARD_WIDTH = 'w-[72%] sm:w-[45%] lg:w-[31%]';
 
-function Card({ head, lang }: { head: DepartmentHead; lang: Lang }) {
+/**
+ * Portrait, because the headshots are: 2:3 studio frames, subject centred,
+ * head starting 14-19% down. A 4/5 box keeps ~83% of that height, and pinning
+ * the crop to the top (`object-top`) spends all of it on the lower chest —
+ * every face keeps its headroom, and cards stay short enough that three fit
+ * side by side. The placeholder cards use the same box so the deck's height
+ * doesn't move as photos arrive.
+ */
+const PHOTO_ASPECT = '4/5';
+
+/**
+ * Cloudflare resizes the master per viewport at the edge; the browser picks
+ * the candidate from `sizes`. See src/lib/cdnImage.ts.
+ */
+function Headshot({ name, photoUrl, eager }: { name: string; photoUrl: string; eager: boolean }) {
+  // Both the devtest build (no Cloudflare, so no /cdn-cgi/image) and a
+  // transform that fails outright land on the master itself. Held in state
+  // rather than poked onto the DOM node so a re-render — a language switch,
+  // the next autoplay tick — cannot put the broken URL back.
+  const [transformFailed, setTransformFailed] = useState(false);
+  const useCdn = IMAGE_CDN_ENABLED && !transformFailed;
+
+  /**
+   * `onError` alone is not enough. These cards are server-rendered, so the
+   * browser starts — and can finish failing — the eager images before React
+   * hydrates, and an `error` event that has already fired is never replayed to
+   * a handler attached after it. A finished image with no intrinsic width is a
+   * failed one, so check for that as the node is adopted too.
+   */
+  const catchErrorBeforeHydration = (img: HTMLImageElement | null) => {
+    if (img && img.complete && img.naturalWidth === 0) setTransformFailed(true);
+  };
+
+  return (
+    <img
+      ref={catchErrorBeforeHydration}
+      src={useCdn ? cdnImageUrl(photoUrl, 640) : withBase(photoUrl)}
+      srcSet={useCdn ? cdnSrcset(photoUrl) : undefined}
+      sizes={useCdn ? HEADSHOT_SIZES : undefined}
+      alt={name}
+      // Only the first few cards are ever on screen at load; the rest are
+      // translated outside the track's overflow and stay unfetched until the
+      // deck reaches them.
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      onError={() => setTransformFailed(true)}
+      // Absolute, not `h-full w-full` in flow: the box gets its height from
+      // `aspect-ratio` with no height of its own, so a percentage height on
+      // the image resolves to auto and a portrait photo renders at its own
+      // 2:3 ratio, overflowing the box and shoving the name down the card.
+      className="absolute inset-0 h-full w-full object-cover object-top"
+    />
+  );
+}
+
+/**
+ * `sizer` renders the card that gives the track its height (see below) — same
+ * box, no image. The height comes from the box's aspect ratio either way, so
+ * the photo would only ever be a second `<img>` for something deliberately
+ * hidden from view.
+ */
+function Card({
+  head,
+  lang,
+  eager = false,
+  sizer = false,
+}: {
+  head: DepartmentHead;
+  lang: Lang;
+  eager?: boolean;
+  sizer?: boolean;
+}) {
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-card bg-cream-card">
       <div
-        className="flex flex-none items-center justify-center text-xs text-slate-muted"
+        className="relative flex flex-none items-center justify-center text-xs text-slate-muted"
         style={{
-          aspectRatio: '4/3',
+          aspectRatio: PHOTO_ASPECT,
           backgroundImage:
             'repeating-linear-gradient(45deg, var(--color-tan) 0 10px, var(--color-tan-border) 10px 20px)',
         }}
       >
-        {head.photoUrl ? (
-          <img src={head.photoUrl} alt={head.name} className="h-full w-full object-cover" />
+        {sizer ? null : head.photoUrl ? (
+          <Headshot name={head.name} photoUrl={head.photoUrl} eager={eager} />
         ) : lang === 'af' ? (
           'HOD foto'
         ) : (
@@ -279,7 +359,7 @@ export function AboutCarousel() {
             className="relative touch-pan-y overflow-hidden pb-2"
           >
             <div aria-hidden className={`invisible ${CARD_WIDTH}`}>
-              <Card head={tallest} lang={lang} />
+              <Card head={tallest} lang={lang} sizer />
             </div>
 
             {departmentHeads.map((head, index) => {
@@ -306,7 +386,10 @@ export function AboutCarousel() {
                     transition: animate ? TRANSITION : 'none',
                   }}
                 >
-                  <Card head={head} lang={lang} />
+                  {/* Slots 0-2 are the three that can be on screen at the
+                      widest breakpoint, and `active` starts at 0 — so these
+                      are exactly the photos above the fold. */}
+                  <Card head={head} lang={lang} eager={index < 3} />
                 </div>
               );
             })}
