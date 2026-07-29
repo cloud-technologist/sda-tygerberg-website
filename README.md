@@ -206,7 +206,7 @@ Two independent workflows under `.github/workflows/`:
 
 | Workflow | Target | Trigger | Notes |
 |---|---|---|---|
-| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath, and `PUBLIC_HAS_API=false` so the LIVE badge doesn't poll a Worker route that doesn't exist here. |
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath, `PUBLIC_HAS_API=false` so the LIVE badge doesn't poll a Worker route that doesn't exist here, and `PUBLIC_IMAGE_CDN=false` because there is no Cloudflare in front of Pages to serve `/cdn-cgi/image/*` (see "Department head photos"). |
 | `deploy-production-cloudflare.yml` | Cloudflare Workers | push to `main`, or manual | The real site, full Worker + `/api/*`. Gated by the `dev` -> `main` promotion PR described above; manual dispatch is available for a re-deploy without a new merge. |
 
 One-time setup — full walkthrough in
@@ -235,7 +235,7 @@ components:
 | `src/data/homeCopy.ts` | Homepage bilingual copy + weekly ministry schedule + the "your first visit" answers |
 | `src/data/beliefsCopy.ts` | Beliefs-page header copy |
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
-| `src/data/departmentHeads.ts` | Department-head carousel data — real names from the board's 2025/2026 Ampsdraers roster; **photos still TBA** |
+| `src/data/departmentHeads.ts` | Department-head carousel data — real names from the board's 2025/2026 Ampsdraers roster, with headshots for 10 of the 20 (see "Department head photos") |
 | `src/data/requestCopy.ts` | Copy for the `/connect` and `/bible-studies` request pages, including the POPIA privacy/consent wording |
 | `src/data/resources.ts` | External resource links (logos self-hosted under `public/logos/`) |
 | `src/data/giving.ts` | EFT banking details shown in the Give card's expandable panel |
@@ -257,6 +257,57 @@ The symbol is a trademark of the General Conference of Seventh-day Adventists,
 used here by a member congregation. It is reproduced from the official artwork
 and only recoloured — the identity system governs its proportions, so it must
 never be redrawn or distorted to fit a layout.
+
+## Department head photos
+
+The carousel on the homepage shows studio headshots for 10 of the 20 people on
+the roster. The rest keep the striped placeholder, and adding one needs no
+component change (below).
+
+**Three copies of every photo, and only one of them is committed as an image
+the browser downloads:**
+
+| Where | What | Committed? |
+|---|---|---|
+| `src/images/TG-DH-*.jpg` | The studio originals — ~20 MP, 7-10 MB each. Nothing under `src/` is served; these are the archive. | Yes |
+| `public/images/hod/TG-DH-*.jpg` | Web masters, 1400px wide, ~200 kB. Derived from the originals by `tools/build-headshots.mjs`, which also strips the camera EXIF. | Yes |
+| `/cdn-cgi/image/...` | What visitors actually get — resized per viewport by Cloudflare at the edge, as AVIF/WebP/JPEG depending on the browser. | No, generated on request |
+
+That last layer is the same approach as the gallery on
+`wedding.cloudkid.link` (`wedding-site-worker/src/_helpers.ts` in the
+`cloudkid-link` repo): one master on the origin, a `srcset` of
+`/cdn-cgi/image/<options>,width=N/...` URLs, and a `sizes` attribute
+describing the card's real width so the browser picks the right one. It all
+lives in `src/lib/cdnImage.ts`.
+
+Two things there have to move together, and there are comments on both saying
+so: `HEADSHOT_SIZES` describes the card widths that `CARD_WIDTH` in
+`AboutCarousel.tsx` actually renders, and the largest of `HEADSHOT_WIDTHS`
+must stay within the master width in `tools/build-headshots.mjs` — Cloudflare
+never upscales, so asking for more than the master holds silently returns a
+smaller image and still bills for it.
+
+**No Cloudflare setup was needed.** Image Transformations are already enabled
+on the `cloudkid.link` zone — that is what serves the wedding gallery — and
+`tygerberg-sda.cloudkid.link` is on the same zone. `/cdn-cgi/*` is handled by
+Cloudflare before a request reaches the Worker, so `src/worker/index.ts`
+neither sees nor routes these.
+
+**When there is no transformer**, the masters are served directly: the devtest
+Pages build sets `PUBLIC_IMAGE_CDN=false` up front, and at runtime a transform
+that fails anyway drops that one card back to its master (`onerror=redirect`
+on the URL, plus an `onError` fallback in the component). Nothing here is
+required for the page to work — it degrades to a plain `<img>`.
+
+### Adding a photo
+
+1. Put the original in `src/images/`.
+2. Add its filename to `HEADSHOTS` in `tools/build-headshots.mjs` and run
+   `node tools/build-headshots.mjs`.
+3. Set `photoUrl` on that person in `src/data/departmentHeads.ts`.
+
+Commit the generated file in `public/images/hod/` along with the change — the
+script is an authoring tool and does not run on build or deploy.
 
 ## Findability
 
@@ -283,10 +334,18 @@ Two things worth knowing:
 These were explicitly flagged as unresolved by the church board in the
 original handoff and are **not** blockers for this MVP:
 
-1. **Department head photos** — names are now real (from the board's
-   "Ampsdraers 2025/2026" roster), but every card still shows the striped
-   placeholder. Add `photoUrl` per person in `src/data/departmentHeads.ts` as
-   headshots arrive; no component change needed.
+1. **Department head photos** — partly resolved: 10 of the 20 cards now carry
+   a studio headshot (see "Department head photos" above for how to add the
+   rest). Two things still need the board:
+
+   - Headshots for the remaining 10 — Arnold Neuhoff, Lisa Branders, Morné
+     Louw, Adéle Meyer, Chris Meyer, Gert Coetzee, Peter Wallace, Sanet
+     Stevens, Bertie Hoffman and the Louw family.
+   - **Who is in `src/images/TG-DH-Laura.jpg`?** It came with the studio set,
+     but there is no Laura on the Ampsdraers roster and the other ten
+     filenames each match a roster first name exactly, so it is not a spelling
+     variant of anyone listed. It has deliberately not been published — no
+     card, and no copy under `public/` — until someone confirms whose it is.
 2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies now
    lead to `/connect` and `/bible-studies`, which collect a request behind an
    explicit POPIA consent checkbox and post it to `/api/contact` (see

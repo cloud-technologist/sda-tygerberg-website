@@ -1,0 +1,16 @@
+# Custom response headers for the Cloudflare Worker's static assets.
+# Supported natively by Workers static assets, the same way Pages reads it.
+# Copied verbatim into dist/ by Astro; GitHub Pages ignores it.
+
+# The headshot masters exist to be resized at the edge (/cdn-cgi/image/... —
+# see src/lib/cdnImage.ts), and Cloudflare caches a transformed variant only as
+# long as the *source* response permits. Workers assets default unhashed files
+# to `max-age=0, must-revalidate`, which pins every variant to Cloudflare's
+# 300s floor and has the transformer re-pulling the master all day (it also
+# returns a `cache-control is too restrictive` warning on every transform).
+#
+# A week, not a year: these filenames are stable and carry no content hash, so
+# replacing someone's photo reuses its URL. A purge makes that immediate; this
+# bounds how long a stale copy can linger for anyone who missed the purge.
+/images/hod/*
+  Cache-Control: public, max-age=604800

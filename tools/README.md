@@ -3,6 +3,30 @@
 Authoring helpers. Nothing here runs during `npm run build` or on deploy — these
 are one-off scripts whose *output* is committed.
 
+## build-headshots.mjs
+
+Turns the studio originals of the department heads into the web masters the
+site serves:
+
+```sh
+node tools/build-headshots.mjs
+```
+
+`src/images/TG-DH-*.jpg` (~20 MP, 7-10 MB) → `public/images/hod/TG-DH-*.jpg`
+(1400px wide, ~200 kB, EXIF stripped). Cloudflare resizes those again per
+viewport at the edge — see "Department head photos" in the root README for the
+whole picture, including why the originals are not served directly.
+
+Unlike `og-image.html` below, this needs no extra install: `sharp` comes in
+with Astro's own dependencies, so `npm ci` is enough. If that ever stops being
+true, `npm i sharp` in a scratch directory outside the repo and run it from
+there.
+
+Which files it builds is an explicit list at the top of the script rather than
+a glob over `src/images/`, so a photo of someone nobody has identified yet
+cannot reach a public URL by accident. Add the filename, re-run, and commit
+the output.
+
 ## og-image.html
 
 Source for `public/og-image.png` (1200×630, the social card) and
