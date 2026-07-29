@@ -20,15 +20,15 @@ export type DepartmentHead = {
   /** Singular job titles — each card is one person, not a department listing. */
   roles: Record<Lang, string[]>;
   /**
-   * Root-relative path to the web master under `public/images/hod/`, derived
-   * from the studio original in `src/images/` by `tools/build-headshots.mjs`.
+   * Root-relative path to the studio original under `public/images/hod/`.
    *
    * Not a finished image URL: the carousel resizes it per viewport through
    * Cloudflare (`src/lib/cdnImage.ts`), so this must stay a plain path that
-   * both the transformer and the no-transform fallback can resolve.
+   * both the transformer and the no-transform fallback can resolve. These are
+   * multi-megabyte files — nothing but the transformer should ever link one.
    *
    * Photos are named for the person, so the file for someone whose card is
-   * removed should go with it — the master is a public URL whether or not
+   * removed should go with it: `public/` is a public URL whether or not
    * anything links to it.
    */
   photoUrl?: string;
@@ -36,9 +36,9 @@ export type DepartmentHead = {
 
 /**
  * Ten of the twenty have headshots (the board's studio session); the rest keep
- * the striped placeholder until photos arrive. Adding one is two steps: run
- * `tools/build-headshots.mjs` with the original in `src/images/`, then set
- * `photoUrl` here. No component change.
+ * the striped placeholder until photos arrive. Adding one is two steps: drop
+ * the original into `public/images/hod/`, then set `photoUrl` here. No
+ * resizing, and no component change.
  */
 export const departmentHeads: DepartmentHead[] = [
   {
@@ -177,10 +177,10 @@ export const departmentHeads: DepartmentHead[] = [
  * One studio photo has no card: `src/images/TG-DH-Laura.jpg`. There is no
  * Laura on the Ampsdraers 2025/2026 roster the list above is built from, and
  * the other ten filenames match a roster first name exactly, so this one is
- * not a spelling variant of anybody here. It has deliberately not been built
- * into `public/images/hod/` — that directory is served publicly, and a
- * headshot should not go up until it is clear whose it is.
+ * not a spelling variant of anybody here. It is the only headshot still under
+ * `src/`, where nothing is served — the rest live in `public/images/hod/` —
+ * because a face should not go up until it is clear whose it is.
  *
- * To publish it once the board confirms: add the filename to HEADSHOTS in
- * tools/build-headshots.mjs, re-run it, and set `photoUrl` on the right card.
+ * To publish it once the board confirms: move it to `public/images/hod/` and
+ * set `photoUrl` on the right card.
  */

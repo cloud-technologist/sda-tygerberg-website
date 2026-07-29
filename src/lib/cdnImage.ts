@@ -31,9 +31,10 @@ export const IMAGE_TRANSFORM_OPTIONS = 'format=auto,quality=82,fit=scale-down';
  * HEADSHOT_SIZES), so 1280 covers it to just under 3x. Keep this list short:
  * each width is a separately billed transformation per photo.
  *
- * The largest entry must stay <= the master width in tools/build-headshots.mjs.
- * `fit=scale-down` never upscales, so asking for more than the master has just
- * returns the master — silently, and still billed.
+ * The sources are the studio originals — ~3,500 x 5,300 — so any width here is
+ * a genuine downscale. `fit=scale-down` never upscales, so a width beyond what
+ * the original holds would silently return something smaller and still bill
+ * for it; there is a lot of headroom before that matters.
  */
 export const HEADSHOT_WIDTHS = [320, 480, 640, 960, 1280];
 
@@ -55,14 +56,23 @@ export const HEADSHOT_SIZES = [
  * The devtest build on GitHub Pages has no Cloudflare in front of it, so
  * `/cdn-cgi/image/...` is a plain 404 there and every card would fall back an
  * image at a time. The Pages workflow sets PUBLIC_IMAGE_CDN=false and the
- * masters are served directly instead — same reasoning as PUBLIC_HAS_API.
+ * originals are served directly instead — same reasoning as PUBLIC_HAS_API.
+ *
+ * Note what that costs on the preview: the originals are 7-10 MB each, and
+ * without a transformer there is nothing to resize them. See "Department head
+ * photos" in the README.
  */
 export const IMAGE_CDN_ENABLED = import.meta.env.PUBLIC_IMAGE_CDN !== 'false';
 
 /**
  * `onerror=redirect` hands the visitor the untransformed source if a transform
  * fails outright. It only works when the source is on the same zone, which is
- * why the masters are served from this site rather than hotlinked.
+ * why the photos are served from this site rather than hotlinked.
+ *
+ * Cloudflare cautions against it when the source is large, and these are —
+ * but the alternative is a broken image that the component's own onError then
+ * repairs with the same original, one round trip later. Both roads lead to the
+ * full-size file; this one also covers the window before React hydrates.
  */
 export function cdnImageUrl(path: string, width: number): string {
   return `/cdn-cgi/image/${IMAGE_TRANSFORM_OPTIONS},width=${width},onerror=redirect${withBase(path)}`;

@@ -264,28 +264,27 @@ The carousel on the homepage shows studio headshots for 10 of the 20 people on
 the roster. The rest keep the striped placeholder, and adding one needs no
 component change (below).
 
-**Three copies of every photo, and only one of them is committed as an image
-the browser downloads:**
+**The studio originals are the only copy, and Cloudflare resizes them per
+request.** There is no build step and no committed derivative:
 
-| Where | What | Committed? |
-|---|---|---|
-| `src/images/TG-DH-*.jpg` | The studio originals — ~20 MP, 7-10 MB each. Nothing under `src/` is served; these are the archive. | Yes |
-| `public/images/hod/TG-DH-*.jpg` | Web masters, 1400px wide, ~200 kB. Derived from the originals by `tools/build-headshots.mjs`, which also strips the camera EXIF. | Yes |
-| `/cdn-cgi/image/...` | What visitors actually get — resized per viewport by Cloudflare at the edge, as AVIF/WebP/JPEG depending on the browser. | No, generated on request |
+| Where | What |
+|---|---|
+| `public/images/hod/TG-DH-*.jpg` | The studio originals as shot — ~3,500 × 5,300, 7-10 MB each. Served, but only ever fetched by Cloudflare's transformer. |
+| `/cdn-cgi/image/<options>,width=N/images/hod/...` | What visitors actually get — resized per viewport at the edge, as AVIF/WebP/JPEG depending on the browser. Generated on request; nothing is stored in the repo. |
 
-That last layer is the same approach as the gallery on
-`wedding.cloudkid.link` (`wedding-site-worker/src/_helpers.ts` in the
-`cloudkid-link` repo): one master on the origin, a `srcset` of
-`/cdn-cgi/image/<options>,width=N/...` URLs, and a `sizes` attribute
-describing the card's real width so the browser picks the right one. It all
-lives in `src/lib/cdnImage.ts`.
+This is the same approach as the gallery on `wedding.cloudkid.link`
+(`wedding-site-worker/src/_helpers.ts` in the `cloudkid-link` repo): one
+full-size image on the origin, a `srcset` of `/cdn-cgi/image/...` URLs, and a
+`sizes` attribute describing the card's real width so the browser picks the
+right one. It all lives in `src/lib/cdnImage.ts`.
 
-Two things there have to move together, and there are comments on both saying
-so: `HEADSHOT_SIZES` describes the card widths that `CARD_WIDTH` in
-`AboutCarousel.tsx` actually renders, and the largest of `HEADSHOT_WIDTHS`
-must stay within the master width in `tools/build-headshots.mjs` — Cloudflare
-never upscales, so asking for more than the master holds silently returns a
-smaller image and still bills for it.
+`HEADSHOT_SIZES` describes the card widths that `CARD_WIDTH` in
+`AboutCarousel.tsx` actually renders — change either and the other is wrong,
+and every card downloads the wrong size. There are comments on both saying so.
+
+Cloudflare's ceiling for a transform source is 100 MB, 100 MP and 12,000 px on
+a side; these sit well inside all three (10 MB, 21 MP, 5,949 px), and the
+Workers per-asset limit of 25 MiB has similar room.
 
 **No Cloudflare setup was needed.** Image Transformations are already enabled
 on the `cloudkid.link` zone — that is what serves the wedding gallery — and
@@ -293,21 +292,23 @@ on the `cloudkid.link` zone — that is what serves the wedding gallery — and
 Cloudflare before a request reaches the Worker, so `src/worker/index.ts`
 neither sees nor routes these.
 
-**When there is no transformer**, the masters are served directly: the devtest
-Pages build sets `PUBLIC_IMAGE_CDN=false` up front, and at runtime a transform
-that fails anyway drops that one card back to its master (`onerror=redirect`
-on the URL, plus an `onError` fallback in the component). Nothing here is
-required for the page to work — it degrades to a plain `<img>`.
+**When there is no transformer, the originals are what gets served**, at full
+size — there is nothing else to fall back to. That happens in two places: the
+devtest Pages build, which sets `PUBLIC_IMAGE_CDN=false` up front because
+`/cdn-cgi/*` does not exist on GitHub Pages, and a transform that fails at
+runtime, which drops that one card back to its original (`onerror=redirect` on
+the URL, plus an `onError` fallback in the component). The page still works in
+both cases; on the devtest preview it is also **several MB per card**, which
+is the price of keeping one copy of each photo.
 
 ### Adding a photo
 
-1. Put the original in `src/images/`.
-2. Add its filename to `HEADSHOTS` in `tools/build-headshots.mjs` and run
-   `node tools/build-headshots.mjs`.
-3. Set `photoUrl` on that person in `src/data/departmentHeads.ts`.
+1. Put the original in `public/images/hod/`.
+2. Set `photoUrl` on that person in `src/data/departmentHeads.ts`.
 
-Commit the generated file in `public/images/hod/` along with the change — the
-script is an authoring tool and does not run on build or deploy.
+Nothing needs resizing first — that is the transformer's job. Note that
+`public/` is publicly reachable, so a photo lands on a real URL the moment it
+is committed, whether or not a card points at it.
 
 ## Findability
 
@@ -344,8 +345,10 @@ original handoff and are **not** blockers for this MVP:
    - **Who is in `src/images/TG-DH-Laura.jpg`?** It came with the studio set,
      but there is no Laura on the Ampsdraers roster and the other ten
      filenames each match a roster first name exactly, so it is not a spelling
-     variant of anyone listed. It has deliberately not been published — no
-     card, and no copy under `public/` — until someone confirms whose it is.
+     variant of anyone listed. It is the one photo still under `src/` — which
+     is not served — rather than in `public/images/hod/` with the others,
+     because publishing someone's face should wait on knowing whose it is.
+     Moving it across and setting `photoUrl` is all it needs.
 2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies now
    lead to `/connect` and `/bible-studies`, which collect a request behind an
    explicit POPIA consent checkbox and post it to `/api/contact` (see
