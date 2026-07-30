@@ -9,14 +9,12 @@ export const SITE = {
     'https://www.google.com/maps/dir//Tygerberg+SDA+Kerk,+54+Boston+St,+Boston,+Cape+Town,+7530',
   appleMapsUrl: 'https://maps.apple.com/?address=54%20Boston%20St,%20Boston,%20Cape%20Town,%207530',
   youtubeChannelUrl: 'https://www.youtube.com/@SDATygerberg',
-  // Channel home ("Featured"), not /videos — /videos lands on the raw upload
-  // list, which surfaced an old section rather than what the channel curates.
+  // "Featured", not /videos — /videos surfaced an old section, not what the
+  // channel curates.
   youtubeFeaturedUrl: 'https://www.youtube.com/@SDATygerberg/featured',
-  // Channel's auto-generated "uploads" playlist — always shows the latest video, zero maintenance.
-  // youtube-nocookie.com (privacy-enhanced mode), not youtube.com — the regular
-  // embed domain relies on third-party storage access that iOS Safari's tracking
-  // prevention blocks, leaving a blank black box with nothing rendered. The
-  // nocookie domain doesn't depend on that and loads reliably there.
+  // Auto-generated "uploads" playlist: always the latest video, no maintenance.
+  // youtube-nocookie.com because the regular embed domain needs third-party
+  // storage access that iOS Safari blocks, leaving a blank black box.
   youtubeUploadsEmbedUrl: 'https://www.youtube-nocookie.com/embed/videoseries?list=UUtZlioPBBORWMMMSJ9BE1Wg',
   // Self-hosted so the download works without depending on an external site.
   beliefsPdfPath: '/SDA-28-Fundamental-Beliefs.pdf',
@@ -25,10 +23,8 @@ export const SITE = {
 export type ServiceTime = { af: string; en: string; start: string; end: string };
 
 /**
- * The Sabbath morning, in order. Times confirmed by the church.
- *
- * Both ends are kept because a start on its own doesn't tell a first-time
- * visitor whether they are committing to half an hour or to the whole morning.
+ * The Sabbath morning, in order. Both ends kept: a start time alone doesn't
+ * tell a visitor if they are committing to half an hour or the whole morning.
  */
 export const SERVICE_TIMES: ServiceTime[] = [
   { af: 'Sabbatskool', en: 'Sabbath School', start: '09:30', end: '10:00' },
@@ -40,13 +36,9 @@ export const SERVICE_TIMES: ServiceTime[] = [
 export const serviceRange = (s: ServiceTime) => `${s.start} – ${s.end}`;
 
 /**
- * When the building itself is open on a Sabbath, per the church.
- *
- * Deliberately wider than the services above and deliberately not derived from
- * them: the doors open half an hour before Sabbath School and stay open half an
- * hour after the Divine Service ends. This is what `openingHoursSpecification`
- * means in structured data — when someone can arrive and find the place open,
- * not when the programme runs.
+ * When the building is open, not when the programme runs — half an hour either
+ * side of the services. Deliberately not derived from SERVICE_TIMES; this is
+ * what `openingHoursSpecification` means.
  */
 export const SABBATH_HOURS = {
   opens: '09:00',

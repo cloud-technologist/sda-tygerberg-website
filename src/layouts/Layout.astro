@@ -13,9 +13,7 @@ interface Props {
 
 const { title, description, image = '/og-image.png', ogType = 'website' } = Astro.props;
 
-// `Astro.site` comes from astro.config.mjs and is the production origin on
-// every build, devtest included — see canonicalPath for why the preview
-// deliberately advertises production URLs.
+// Production origin on every build, devtest included — C-23.
 const site = Astro.site!;
 const canonical = new URL(canonicalPath(Astro.url.pathname), site);
 const ogImage = new URL(image, site);
@@ -37,12 +35,10 @@ const jsonLd = churchJsonLd(site);
     {!indexable && <meta name="robots" content="noindex,nofollow" />}
 
     <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
-    <!-- iOS ignores an SVG favicon entirely, so a bookmarked page gets a
-         screenshot of the page instead of a mark without this. -->
+    <!-- iOS ignores SVG favicons; without this a bookmark gets a screenshot. -->
     <link rel="apple-touch-icon" href={withBase('/apple-touch-icon.png')} />
 
-    <!-- The card people actually see: a church link travels by WhatsApp and
-         Facebook far more than by search. -->
+    <!-- The card people actually see — a church link travels by WhatsApp. -->
     <meta property="og:type" content={ogType} />
     <meta property="og:url" content={canonical.href} />
     <meta property="og:title" content={title} />
@@ -52,8 +48,7 @@ const jsonLd = churchJsonLd(site);
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Tygerberg SDA Kerk — 54 Boston St, Boston, Kaapstad" />
     <meta property="og:site_name" content="Tygerberg SDA Kerk" />
-    <!-- The page ships as Afrikaans and swaps language client-side, so `af_ZA`
-         is what a crawler actually receives; English is listed as alternate. -->
+    <!-- Ships as Afrikaans and swaps client-side, so that is what crawlers get. -->
     <meta property="og:locale" content="af_ZA" />
     <meta property="og:locale:alternate" content="en_ZA" />
 
@@ -72,8 +67,7 @@ const jsonLd = churchJsonLd(site);
     <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
   </head>
   <body>
-    <!-- Server-rendered rather than part of a React island: this has to work on
-         the very first Tab press, before any island hydrates. -->
+    <!-- Server-rendered: must work on the first Tab press, pre-hydration. -->
     <a class="skip-link" href="#main">Slaan oor na inhoud</a>
     <slot />
   </body>

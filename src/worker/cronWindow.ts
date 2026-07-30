@@ -1,15 +1,10 @@
 /**
- * Minimal cron-expression matcher, used as a *predicate on the current time*
- * rather than as a scheduler.
+ * Minimal cron matcher used as a *predicate on the current time*, not a
+ * scheduler — so `* 9-12 * * 6` means "any minute 09:00-12:59 on Saturdays".
+ * CONCERNS.md C-14.
  *
- * Standard 5-field syntax — `minute hour day-of-month month day-of-week` —
- * supporting `*`, `5`, `9-12`, `1,3,5`, and step values (`*\/15`, `9-17/2`).
- * Day-of-week is 0-6 with 0 = Sunday (7 is accepted as Sunday too, as most
- * cron implementations do).
- *
- * Reading a cron expression as a window is what makes `* 9-12 * * 6` mean
- * "any minute between 09:00 and 12:59 on Saturdays" — which is exactly the
- * Sabbath service window we want to limit YouTube API calls to.
+ * Standard 5 fields, supporting `*`, `5`, `9-12`, `1,3,5` and steps. Day-of-week
+ * is 0-6 with 0 = Sunday; 7 is accepted as Sunday too.
  */
 
 const FIELD_RANGES: { min: number; max: number }[] = [
@@ -30,17 +25,12 @@ const WEEKDAY_INDEX: Record<string, number> = {
   Sat: 6,
 };
 
-// Anchored so a term is either exactly `*`, `N`, or `N-M`, each with an
-// optional `/step`. Matching by shape first is what keeps `Number()` from
-// rescuing malformed input: `Number('')` is 0, so a bare `split('-')` would
-// read `-11` as `0-11` and swing the window open from midnight, and would
-// silently truncate `1-2-3` to `1-2`. Both now fail closed.
+// Shape first, so `Number()` cannot rescue malformed input — C-15.
 const TERM_PATTERN = /^(\*|\d{1,2}|\d{1,2}-\d{1,2})(\/\d{1,2})?$/;
 
 function matchField(field: string, value: number, min: number, max: number): boolean {
   const terms = field.split(',');
-  // Every term must be well-formed, not just the one that happens to match —
-  // `9,,` and `9,-11` should be rejected outright rather than quietly working.
+  // Every term must be well-formed, not just the matching one — C-15.
   if (terms.length === 0 || !terms.every((term) => TERM_PATTERN.test(term))) return false;
 
   // The field then matches if *any* of those terms matches.
@@ -78,9 +68,8 @@ type ZonedNow = {
 };
 
 /**
- * Breaks `now` into calendar fields as observed in `timeZone`, so the window
- * is expressed in local church time (SAST) and stays correct regardless of
- * the timezone the Worker happens to execute in.
+ * `now` as calendar fields in `timeZone`, so the window is local church time
+ * whatever timezone the Worker runs in.
  */
 export function zonedNow(now: Date, timeZone: string): ZonedNow | null {
   let parts: Intl.DateTimeFormatPart[];
@@ -115,14 +104,8 @@ export function zonedNow(now: Date, timeZone: string): ZonedNow | null {
 }
 
 /**
- * True when `now`, as observed in `timeZone`, falls inside the window
- * described by the 5-field cron expression.
- *
- * Returns false for a malformed expression or an unknown timezone. That
- * fail-closed choice is deliberate: the caller uses this to decide whether
- * to spend YouTube API quota, and a typo should cost nothing rather than
- * quietly billing every request. Misconfiguration is surfaced by the
- * `invalid-schedule` source on the /api/live-status response.
+ * True when `now` in `timeZone` falls inside the window. Malformed expression
+ * or unknown timezone returns false — fails closed, C-15.
  */
 export function isWithinCronWindow(expression: string, now: Date, timeZone: string): boolean {
   const fields = expression.trim().split(/\s+/);
@@ -145,11 +128,7 @@ export function isWithinCronWindow(expression: string, now: Date, timeZone: stri
   );
 }
 
-/**
- * Cheap syntax check used to report misconfiguration instead of silently
- * never matching. Takes `now` so callers stay a pure function of their
- * inputs — it's only used to validate the timezone.
- */
+/** Syntax check, so misconfiguration reports rather than silently never firing. */
 export function isValidCronWindow(
   expression: string,
   timeZone: string,
@@ -158,8 +137,8 @@ export function isValidCronWindow(
   const fields = expression.trim().split(/\s+/);
   if (fields.length !== 5) return false;
   if (zonedNow(now, timeZone) === null) return false;
-  // Every field must match at least one value in its range, otherwise the
-  // expression can never fire and is almost certainly a typo.
+  // A field that matches nothing in its range can never fire — almost always
+  // a typo.
   return fields.every((field, i) => {
     const { min, max } = FIELD_RANGES[i];
     for (let v = min; v <= max; v += 1) if (matchField(field, v, min, max)) return true;

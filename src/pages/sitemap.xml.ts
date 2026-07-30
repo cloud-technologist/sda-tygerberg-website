@@ -1,12 +1,11 @@
 import type { APIContext } from 'astro';
 
 /**
- * Hand-written rather than via @astrojs/sitemap: four static routes don't
- * justify a sixth production dependency in a project that deliberately runs
- * five.
+ * Hand-written rather than via @astrojs/sitemap — four static routes don't
+ * justify another production dependency.
  *
- * Note nothing advertises this file. Cloudflare serves a managed robots.txt on
- * this domain and it carries no `Sitemap:` directive, so the sitemap has to be
+ * Nothing advertises this file: Cloudflare serves a managed robots.txt with no
+ * `Sitemap:` directive, so it has to be
  * submitted once in Google Search Console before it does anything — see the
  * README.
  */
@@ -18,9 +17,7 @@ const ROUTES = [
 ];
 
 export function GET({ site }: APIContext) {
-  // Always the production origin, even on the devtest build — a sitemap listing
-  // github.io URLs would invite exactly the duplicate indexing the canonical
-  // tags exist to prevent.
+  // Production origin even on devtest — C-23.
   const origin = site!;
 
   const urls = ROUTES.map(

@@ -75,12 +75,13 @@ export function VisitMap() {
           </a>
         </div>
 
+        {/* Map carries no tile attribution, by decision — CONCERNS.md C-01. */}
         <div className="relative min-h-[300px] overflow-hidden rounded-card-lg">
           <iframe
             src={withBase('/map.html')}
             title="Tygerberg SDA Kerk — kaart"
             loading="lazy"
-            className="h-full min-h-[300px] w-full border-0"
+            className="absolute inset-0 h-full w-full border-0"
           />
         </div>
       </div>
