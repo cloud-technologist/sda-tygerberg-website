@@ -206,7 +206,7 @@ Two independent workflows under `.github/workflows/`:
 
 | Workflow | Target | Trigger | Notes |
 |---|---|---|---|
-| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath, `PUBLIC_HAS_API=false` so the LIVE badge doesn't poll a Worker route that doesn't exist here, and `PUBLIC_IMAGE_CDN=false` because there is no Cloudflare in front of Pages to serve `/cdn-cgi/image/*` (see "Department head photos"). |
+| `deploy-devtest-pages.yml` | GitHub Pages | push to `dev`, or manual | Free static preview, no secrets required. Built with `ASTRO_BASE=/<repo-name>/` since Pages project sites serve from a subpath, `PUBLIC_HAS_API=false` so the LIVE badge doesn't poll a Worker route that doesn't exist here, and `PUBLIC_IMAGE_CDN=false` because there is no Cloudflare in front of Pages to serve `/cdn-cgi/image/*` — that skips the runtime probe and serves the fallback copies from the start (see "Department head photos"). |
 | `deploy-production-cloudflare.yml` | Cloudflare Workers | push to `main`, or manual | The real site, full Worker + `/api/*`. Gated by the `dev` -> `main` promotion PR described above; manual dispatch is available for a re-deploy without a new merge. |
 
 One-time setup — full walkthrough in
@@ -235,7 +235,7 @@ components:
 | `src/data/homeCopy.ts` | Homepage bilingual copy + weekly ministry schedule + the "your first visit" answers |
 | `src/data/beliefsCopy.ts` | Beliefs-page header copy |
 | `src/data/beliefs.ts` | All 28 Fundamental Beliefs, bilingual, grouped into 6 categories (final content, not placeholder) |
-| `src/data/departmentHeads.ts` | Department-head carousel data — real names from the board's 2025/2026 Ampsdraers roster, with headshots for 10 of the 20 (see "Department head photos") |
+| `src/data/departmentHeads.ts` | Department-head carousel data — real names from the board's 2025/2026 Ampsdraers roster plus the Personal Ministries committee chair, with headshots for 11 of the 21 (see "Department head photos") |
 | `src/data/requestCopy.ts` | Copy for the `/connect` and `/bible-studies` request pages, including the POPIA privacy/consent wording |
 | `src/data/resources.ts` | External resource links (logos self-hosted under `public/logos/`) |
 | `src/data/giving.ts` | EFT banking details shown in the Give card's expandable panel |
@@ -260,27 +260,34 @@ never be redrawn or distorted to fit a layout.
 
 ## Department head photos
 
-The carousel on the homepage shows studio headshots for 10 of the 20 people on
-the roster. The rest keep the striped placeholder, and adding one needs no
-component change (below).
+The carousel on the homepage shows studio headshots for 11 of the 21 people on
+the roster. The rest keep the striped placeholder, and adding one is described
+at the end of this section.
 
-**The studio originals are the only copy, and Cloudflare resizes them per
-request.** There is no build step and no committed derivative:
+**Two copies of each photo on the origin, and a third form generated on
+request:**
 
 | Where | What |
 |---|---|
-| `public/images/hod/TG-DH-*.jpg` | The studio originals as shot — ~3,500 × 5,300, 7-10 MB each. Served, but only ever fetched by Cloudflare's transformer. |
-| `/cdn-cgi/image/<options>,width=N/images/hod/...` | What visitors actually get — resized per viewport at the edge, as AVIF/WebP/JPEG depending on the browser. Generated on request; nothing is stored in the repo. |
+| `public/images/hod/TG-DH-*.jpg` | The studio originals as shot — ~3,500 × 5,300, 7-10 MB each. Served, but only ever fetched by Cloudflare's transformer. No visitor should receive one. |
+| `public/images/hod/fallback/TG-DH-*.jpg` | 1400px, ~200 kB copies built by `tools/build-headshots.mjs`. What gets served when there is no transformer to resize the original. |
+| `/cdn-cgi/image/<options>,width=N/images/hod/...` | What visitors normally get — resized per viewport at the edge, as AVIF/WebP/JPEG depending on the browser. Generated on request; nothing is stored in the repo. |
 
-This is the same approach as the gallery on `wedding.cloudkid.link`
-(`wedding-site-worker/src/_helpers.ts` in the `cloudkid-link` repo): one
-full-size image on the origin, a `srcset` of `/cdn-cgi/image/...` URLs, and a
-`sizes` attribute describing the card's real width so the browser picks the
-right one. It all lives in `src/lib/cdnImage.ts`.
+The transform layer is the same approach as the gallery on
+`wedding.cloudkid.link` (`wedding-site-worker/src/_helpers.ts` in the
+`cloudkid-link` repo): one full-size image on the origin, a `srcset` of
+`/cdn-cgi/image/...` URLs, and a `sizes` attribute describing the card's real
+width so the browser picks the right one. It all lives in
+`src/lib/cdnImage.ts`.
 
-`HEADSHOT_SIZES` describes the card widths that `CARD_WIDTH` in
-`AboutCarousel.tsx` actually renders — change either and the other is wrong,
-and every card downloads the wrong size. There are comments on both saying so.
+Two invariants there, both commented in place:
+
+- `HEADSHOT_SIZES` describes the card widths that `CARD_WIDTH` in
+  `AboutCarousel.tsx` actually renders. Change either and the other is wrong,
+  and every card downloads the wrong size.
+- The largest of `HEADSHOT_WIDTHS` is the floor for `MASTER_WIDTH` in
+  `tools/build-headshots.mjs`, so a fallback copy is never smaller than the
+  srcset candidate it stands in for.
 
 Cloudflare's ceiling for a transform source is 100 MB, 100 MP and 12,000 px on
 a side; these sit well inside all three (10 MB, 21 MP, 5,949 px), and the
@@ -292,23 +299,41 @@ on the `cloudkid.link` zone — that is what serves the wedding gallery — and
 Cloudflare before a request reaches the Worker, so `src/worker/index.ts`
 neither sees nor routes these.
 
-**When there is no transformer, the originals are what gets served**, at full
-size — there is nothing else to fall back to. That happens in two places: the
-devtest Pages build, which sets `PUBLIC_IMAGE_CDN=false` up front because
-`/cdn-cgi/*` does not exist on GitHub Pages, and a transform that fails at
-runtime, which drops that one card back to its original (`onerror=redirect` on
-the URL, plus an `onError` fallback in the component). The page still works in
-both cases; on the devtest preview it is also **several MB per card**, which
-is the price of keeping one copy of each photo.
+### Deciding whether the transformer is there
+
+The originals are far too heavy to send to a browser, so the site never guesses
+about this. Two mechanisms, in order:
+
+1. **A build-time flag** for an environment known to have no transformer. The
+   devtest Pages workflow sets `PUBLIC_IMAGE_CDN=false`, because `/cdn-cgi/*`
+   is a plain 404 on GitHub Pages. That skips step 2 entirely and renders the
+   fallback copies from the start.
+2. **A runtime probe.** On hydration the carousel sends one `HEAD` to a
+   `/cdn-cgi/image/...` URL and waits for a `2xx` with an `image/*`
+   content-type. The URL it probes is already in the first card's `srcset`, so
+   the check costs no bytes (empty `HEAD` body) and no extra billable
+   transformation. One probe per page load, shared by every card.
+
+Until the probe answers, the cards render transform URLs — which is what the
+server-rendered HTML contains, so hydration matches and the visible images are
+already in flight. If the answer is "no", every card that has not started
+loading switches to its fallback copy without ever requesting a transform.
+Individually, a card whose transform fails also drops to its own fallback.
+
+There is deliberately no `onerror=redirect` on the transform URLs: that option
+hands the visitor the transform's *source*, which here is the multi-megabyte
+original — the one thing that must not happen.
 
 ### Adding a photo
 
 1. Put the original in `public/images/hod/`.
-2. Set `photoUrl` on that person in `src/data/departmentHeads.ts`.
+2. Run `node tools/build-headshots.mjs` to build its fallback copy.
+3. Set `photo` on that person in `src/data/departmentHeads.ts` — just the
+   filename, e.g. `TG-DH-Jaco.jpg`; both paths are derived from it.
 
-Nothing needs resizing first — that is the transformer's job. Note that
-`public/` is publicly reachable, so a photo lands on a real URL the moment it
-is committed, whether or not a card points at it.
+Commit the generated file in `public/images/hod/fallback/` along with the
+change. Note that `public/` is publicly reachable, so a photo lands on a real
+URL the moment it is committed, whether or not a card points at it.
 
 ## Findability
 
@@ -335,20 +360,20 @@ Two things worth knowing:
 These were explicitly flagged as unresolved by the church board in the
 original handoff and are **not** blockers for this MVP:
 
-1. **Department head photos** — partly resolved: 10 of the 20 cards now carry
+1. **Department head photos** — partly resolved: 11 of the 21 cards now carry
    a studio headshot (see "Department head photos" above for how to add the
    rest). Two things still need the board:
 
    - Headshots for the remaining 10 — Arnold Neuhoff, Lisa Branders, Morné
      Louw, Adéle Meyer, Chris Meyer, Gert Coetzee, Peter Wallace, Sanet
      Stevens, Bertie Hoffman and the Louw family.
-   - **Who is in `src/images/TG-DH-Laura.jpg`?** It came with the studio set,
-     but there is no Laura on the Ampsdraers roster and the other ten
-     filenames each match a roster first name exactly, so it is not a spelling
-     variant of anyone listed. It is the one photo still under `src/` — which
-     is not served — rather than in `public/images/hod/` with the others,
-     because publishing someone's face should wait on knowing whose it is.
-     Moving it across and setting `photoUrl` is all it needs.
+   - **Laura's surname.** She chairs the Persoonlike Bedieningkomitee &
+     Evangelisasie and now has a card, but the board supplied the portfolio
+     without a full name, so the card reads just "Laura" — the only
+     single-name entry other than "Louw Familie". Her card also fills a gap in
+     the Ampsdraers 2025/2026 roster, which records Personal Ministries only
+     as one of the elder's titles and lists no chair for the committee itself;
+     worth confirming the roster is what needs updating rather than the site.
 2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies now
    lead to `/connect` and `/bible-studies`, which collect a request behind an
    explicit POPIA consent checkbox and post it to `/api/contact` (see
