@@ -75,37 +75,14 @@ export function VisitMap() {
           </a>
         </div>
 
-        <div className="flex flex-col">
-          <div className="relative min-h-[300px] flex-1 overflow-hidden rounded-card-lg">
-            <iframe
-              src={withBase('/map.html')}
-              title="Tygerberg SDA Kerk — kaart"
-              loading="lazy"
-              className="absolute inset-0 h-full w-full border-0"
-            />
-          </div>
-          {/*
-            The map's tile credit, required by the ODbL and OSM's tile policy.
-            It used to sit in the map's own bottom-right corner, which put a
-            white box over a map this size; the OSMF guidelines allow it
-            adjacent to the map instead, so it lives here. Not decoration and
-            not optional — removing it breaks the licence the tiles come under.
-
-            Untranslated on purpose: it is a proper noun and a copyright mark.
-            Sized and coloured to stay comfortably readable, which the
-            guidelines also ask for.
-          */}
-          <p className="mt-2 text-right text-xs text-slate">
-            ©{' '}
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noopener"
-              className="underline decoration-subtle underline-offset-2 hover:text-navy"
-            >
-              OpenStreetMap
-            </a>
-          </p>
+        {/* Map carries no tile attribution, by decision — CONCERNS.md C-01. */}
+        <div className="relative min-h-[300px] overflow-hidden rounded-card-lg">
+          <iframe
+            src={withBase('/map.html')}
+            title="Tygerberg SDA Kerk — kaart"
+            loading="lazy"
+            className="absolute inset-0 h-full w-full border-0"
+          />
         </div>
       </div>
     </section>

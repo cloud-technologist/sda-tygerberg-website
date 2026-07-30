@@ -2,26 +2,14 @@
 # Supported natively by Workers static assets, the same way Pages reads it.
 # Copied verbatim into dist/ by Astro; GitHub Pages ignores it.
 
-# The headshots exist to be resized at the edge (/cdn-cgi/image/... — see
-# src/lib/cdnImage.ts), and Cloudflare caches a transformed variant only as
-# long as the *source* response permits. Workers assets default unhashed files
-# to `max-age=0, must-revalidate`, which pins every variant to Cloudflare's
-# 300s floor and has the transformer re-pulling the original all day (it also
-# returns a `cache-control is too restrictive` warning on every transform).
-# These sources are 7-10 MB each, so that re-pulling is not cheap.
-#
-# A week, not a year: these filenames are stable and carry no content hash, so
-# replacing someone's photo reuses its URL. A purge makes that immediate; this
-# bounds how long a stale copy can linger for anyone who missed the purge.
-#
-# Verified on the live deploy: the source now answers `max-age=604800` and the
-# transformed variants inherit it, with the `too restrictive` warning gone.
+# Unhashed assets default to `max-age=0`, which pins every Cloudflare image
+# variant to a 300s floor and has the transformer re-pulling a multi-MB original
+# all day. A week, not a year, because these filenames carry no content hash.
+# CONCERNS.md C-24.
 /images/hod/*
   Cache-Control: public, max-age=604800
 
-# The pre-resized fallback copies, which browsers do fetch directly whenever
-# there is no transformer. Spelled out rather than left to the rule above:
-# whether `*` spans a `/` is not something worth being wrong about, and if it
-# does, this rule simply agrees with it.
+# The fallback copies, which browsers do fetch directly. Spelled out rather than
+# left to the rule above: whether `*` spans a `/` is not worth being wrong about.
 /images/hod/fallback/*
   Cache-Control: public, max-age=604800

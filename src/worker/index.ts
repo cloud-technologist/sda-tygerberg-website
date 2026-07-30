@@ -9,9 +9,8 @@ export type Env = LiveStatusEnv &
   };
 
 /**
- * Serves the static Astro build via the ASSETS binding, plus a single API
- * route. Add future routes (contact form, CMS-backed schedule/department
- * data, etc.) as branches here, or split into src/worker/routes/* as they grow.
+ * Serves the static build via the ASSETS binding, plus the API routes. Add new
+ * ones as branches here, or split into src/worker/routes/* as they grow.
  */
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -25,8 +24,7 @@ export default {
       const status = await getLiveStatus(env);
       return Response.json(status, {
         headers: {
-          // Cosmetic and time-sensitive — never let an edge or browser cache
-          // pin the badge on after the stream ends.
+          // Never let a cache pin the badge on after the stream ends.
           'Cache-Control': 'no-store',
         },
       });

@@ -1,19 +1,14 @@
 import type { Lang } from './site';
 
 /**
- * Department heads as confirmed by the church board, cross-checked against the
- * "Tygerberg-Gemeente Ampsdraers 2025/2026" roster.
+ * Department heads, cross-checked against the "Ampsdraers 2025/2026" roster.
  *
- * One card per person, not one per position: several people head more than one
- * department, so their titles are merged onto a single headshot rather than
- * repeating the same face through the carousel. `roles` is therefore a list.
+ * One card per person, not per position — `roles` is a list because several
+ * people head more than one department. `id` keys the carousel, so it survives
+ * a name correction.
  *
- * Names only, by design. No phone numbers or email addresses — those were
- * stripped site-wide for POPIA, and the /connect form (behind an explicit
- * consent checkbox) is the compliant way to reach a person. Do not reintroduce
- * direct contact details here.
- *
- * `id` (not `name`) keys the carousel — it stays stable if a name is corrected.
+ * Names only: no phone numbers or email addresses anywhere here — CONCERNS.md
+ * C-20.
  */
 export type DepartmentHead = {
   id: string;
@@ -21,27 +16,14 @@ export type DepartmentHead = {
   /** Singular job titles — each card is one person, not a department listing. */
   roles: Record<Lang, string[]>;
   /**
-   * Just the filename of the headshot, e.g. `TG-DH-Jaco.jpg`.
-   *
-   * Not a URL, and deliberately not a path: there are two copies of every
-   * photo — the full-size original Cloudflare transforms, and the pre-resized
-   * fallback served when it can't — and `src/lib/cdnImage.ts` builds both from
-   * this one name so they cannot drift apart.
-   *
-   * Photos are named for the person, so the files for someone whose card is
-   * removed should go with it: `public/` is a public URL whether or not
-   * anything links to it.
+   * Filename only, e.g. `TG-DH-Jaco.jpg` — not a path. Every photo has two
+   * copies and cdnImage.ts derives both from this one name so they cannot
+   * drift. Delete the files with the card: `public/` is a live URL either way.
    */
   photo?: string;
 };
 
-/**
- * Eleven of the twenty-one have headshots (the board's studio session); the
- * rest keep the striped placeholder until photos arrive. Adding one is three
- * steps: drop the original into `public/images/hod/`, run
- * `node tools/build-headshots.mjs` for its fallback copy, then set `photo`
- * here. No component change.
- */
+/** 11 of 21 have headshots; the rest show the placeholder. README to add one. */
 export const departmentHeads: DepartmentHead[] = [
   {
     id: 'kerkraad',
@@ -60,10 +42,8 @@ export const departmentHeads: DepartmentHead[] = [
   {
     id: 'persoonlike-bediening',
     name: 'Laura Rolff',
-    // Sits next to Jaco on purpose. He holds "Persoonlike Bediening" as an
-    // elder, she chairs the committee under it, and the roster the rest of this
-    // list came from records only his half — so the adjacency is what says
-    // these are one thread of work rather than a duplicated title.
+    // Next to Jaco on purpose: he holds "Persoonlike Bediening" as an elder,
+    // she chairs the committee under it. Not a duplicated title.
     roles: {
       af: ['Persoonlike Bedieningkomitee', 'Evangelisasie'],
       en: ['Personal Ministries Committee', 'Evangelism'],
@@ -79,9 +59,8 @@ export const departmentHeads: DepartmentHead[] = [
       af: ['Hoofdiaken', 'Veiligheidsoffisier'],
       en: ['Head Deacon', 'Safety Officer'],
     },
-    // "Graig" is the studio's spelling of the filename, kept verbatim so both
-    // copies stay straight derivations of what the photographer delivered. The
-    // roster spells him Craig, and that is what the card shows.
+    // "Graig" is the studio's filename, kept verbatim; the roster spells him
+    // Craig, which is what the card shows.
     photo: 'TG-DH-Graig.jpg',
   },
   {

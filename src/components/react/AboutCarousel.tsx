@@ -19,12 +19,7 @@ const AUTOPLAY_MS = 4200;
 const GAP_PX = 20;
 const TRANSITION = 'transform 520ms cubic-bezier(.22,.61,.36,1)';
 
-/**
- * A gesture this brief is a flick: commit on its direction, whatever distance
- * it covered. Cards are most of the screen on a phone, so judging a flick on
- * distance means asking for a long deliberate drag — and silently swallowing
- * the quick thumb-flick people actually use.
- */
+/** Under this, commit on direction alone — a flick, not a measured drag. */
 const FLICK_MS = 300;
 /** Below this it is a tap or a jitter, however brief. */
 const MIN_FLICK_PX = 10;
@@ -34,71 +29,40 @@ const COMMIT_RATIO = 0.22;
 const COUNT = departmentHeads.length;
 
 /**
- * Which slot a card occupies relative to the active one: 0 is the leftmost
- * visible card, positive slots run off to the right, negative off to the left.
- *
- * This function *is* the carousel. Every card's position is a pure function of
- * `active` in modular arithmetic, so the ring is genuinely circular in both
- * directions — there is no end to reach, no duplicated markup, and no
- * accumulated scroll offset that can drift out of alignment. Stepping past the
- * last card is just `(active + 1) % COUNT`.
+ * Slot a card occupies relative to the active one: 0 is leftmost visible,
+ * positive runs off to the right, negative off to the left. CONCERNS.md C-12.
  */
 function slotOf(index: number, active: number) {
   const ahead = (((index - active) % COUNT) + COUNT) % COUNT;
-  // Send the far half of the ring round the back, so cards leave to the left
-  // as well as arriving from the right.
+  // Far half of the ring goes round the back, so cards also leave to the left.
   return ahead > COUNT / 2 ? ahead - COUNT : ahead;
 }
 
-/**
- * Cards wrap round the back of the ring between slot -(COUNT/2 - 1) and
- * +COUNT/2, jumping the full width of the roster. That jump must never be
- * seen crossing the viewport, so anything out here moves without animating.
- * Everything comfortably inside does animate — wide enough that a multi-card
- * drag still slides its cards in and out rather than popping them.
- */
+/** Outside this, a card is mid-wrap and must move without animating — C-12. */
 const ANIMATE_SPAN = Math.max(2, Math.floor(COUNT / 2) - 2);
 const isAnimatedSlot = (slot: number) => slot >= -ANIMATE_SPAN && slot <= ANIMATE_SPAN;
 
-// Changing this invalidates HEADSHOT_SIZES in src/lib/cdnImage.ts, which is
-// what tells the browser which srcset candidate to download.
+// Paired with HEADSHOT_SIZES in src/lib/cdnImage.ts — CONCERNS.md C-03.
 const CARD_WIDTH = 'w-[72%] sm:w-[45%] lg:w-[31%]';
 
 /**
- * Portrait, because the headshots are: 2:3 studio frames, subject centred,
- * head starting 14-19% down. A 4/5 box keeps ~83% of that height, and pinning
- * the crop to the top (`object-top`) spends all of it on the lower chest —
- * every face keeps its headroom, and cards stay short enough that three fit
- * side by side. The placeholder cards use the same box so the deck's height
- * doesn't move as photos arrive.
+ * Portrait, cropped from the top: the sources are 2:3 with the head 14-19%
+ * down, so this keeps every face's headroom and spends the crop on the chest.
+ * Placeholder cards use the same box, so the deck's height doesn't move as
+ * photos arrive.
  */
 const PHOTO_ASPECT = '4/5';
 
-/**
- * The URL the probe asks about: the smallest candidate of the first photo on
- * the roster. Already in that card's `srcset`, so confirming the transformer
- * is alive generates nothing Cloudflare would not have generated anyway.
- */
+/** Smallest candidate of the first photo — already in its srcset, so free. */
 const PROBE_URL = (() => {
   const withPhoto = departmentHeads.find((head) => head.photo);
   return withPhoto ? cdnImageUrl(headshotSource(withPhoto.photo!), HEADSHOT_WIDTHS[0]) : null;
 })();
 
 /**
- * Whether the edge transformer is answering, asked once and shared by every
- * card.
- *
- * Without this each card discovers the answer by failing, which costs a 404
- * per photo and leaves the visitor watching them arrive one at a time. Asking
- * up front means a single verdict, so every card that has not started loading
- * yet — most of the deck, since only three are ever on screen — goes straight
- * to the copy that works.
- *
- * `unknown` — the initial value on both the server and the client — is
- * deliberately optimistic. It renders transform URLs, which is both what the
- * common case wants and what the server-rendered HTML already contains, so
- * hydration matches and the eager images are in flight before the probe
- * returns.
+ * Whether the edge transformer is answering: asked once, shared by every card.
+ * `unknown` is optimistic and matches the server-rendered HTML. CONCERNS.md
+ * C-09.
  */
 function useImageCdn(): ImageCdnStatus {
   const [status, setStatus] = useState<ImageCdnStatus>(
@@ -119,10 +83,7 @@ function useImageCdn(): ImageCdnStatus {
   return status;
 }
 
-/**
- * Cloudflare resizes the original per viewport at the edge; the browser picks
- * the candidate from `sizes`. See src/lib/cdnImage.ts.
- */
+/** Cloudflare resizes per viewport; the browser picks from `sizes`. */
 function Headshot({
   name,
   photo,
@@ -134,23 +95,13 @@ function Headshot({
   eager: boolean;
   cdn: ImageCdnStatus;
 }) {
-  // This photo's transform failed even though others may be fine. Held in
-  // state rather than poked onto the DOM node so a re-render — a language
-  // switch, the next autoplay tick — cannot put the broken URL back.
+  // In state, not poked onto the DOM node, so a re-render cannot restore the
+  // broken URL. Falls back to the resized copy, never the original — C-02.
   const [transformFailed, setTransformFailed] = useState(false);
-
-  // Never the original: that is an ~8 MB studio file, and the only thing it is
-  // for is being the transformer's source.
   const useCdn = cdn !== 'unavailable' && !transformFailed;
   const fallback = headshotFallbackUrl(photo);
 
-  /**
-   * `onError` alone is not enough. These cards are server-rendered, so the
-   * browser starts — and can finish failing — the eager images before React
-   * hydrates, and an `error` event that has already fired is never replayed to
-   * a handler attached after it. A finished image with no intrinsic width is a
-   * failed one, so check for that as the node is adopted too.
-   */
+  /** `onError` misses failures that happened before hydration — C-05. */
   const catchErrorBeforeHydration = (img: HTMLImageElement | null) => {
     if (img && img.complete && img.naturalWidth === 0) setTransformFailed(true);
   };
@@ -162,27 +113,17 @@ function Headshot({
       srcSet={useCdn ? cdnSrcset(headshotSource(photo)) : undefined}
       sizes={useCdn ? HEADSHOT_SIZES : undefined}
       alt={name}
-      // Only the first few cards are ever on screen at load; the rest are
-      // translated outside the track's overflow and stay unfetched until the
-      // deck reaches them.
+      // Off-screen cards sit outside the track's overflow, so lazy holds them.
       loading={eager ? 'eager' : 'lazy'}
       decoding="async"
       onError={() => setTransformFailed(true)}
-      // Absolute, not `h-full w-full` in flow: the box gets its height from
-      // `aspect-ratio` with no height of its own, so a percentage height on
-      // the image resolves to auto and a portrait photo renders at its own
-      // 2:3 ratio, overflowing the box and shoving the name down the card.
+      // Absolute, not `h-full` in flow — CONCERNS.md C-06.
       className="absolute inset-0 h-full w-full object-cover object-top"
     />
   );
 }
 
-/**
- * `sizer` renders the card that gives the track its height (see below) — same
- * box, no image. The height comes from the box's aspect ratio either way, so
- * the photo would only ever be a second `<img>` for something deliberately
- * hidden from view.
- */
+/** `sizer` is the invisible card that gives the track its height: no image. */
 function Card({
   head,
   lang,
@@ -216,8 +157,7 @@ function Card({
       </div>
       <div className="p-4 text-center">
         <div className="font-serif text-lg text-navy">{head.name}</div>
-        {/* Stacked rather than joined: someone heading three departments would
-            otherwise wrap into an unreadable run. */}
+        {/* Stacked, not joined — three roles on one line is unreadable. */}
         <div className="mt-0.5 text-sm leading-snug text-slate">
           {head.roles[lang].map((role) => (
             <div key={role}>{role}</div>
@@ -243,26 +183,10 @@ export function AboutCarousel() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const dragFrom = useRef<{ x: number; at: number } | null>(null);
 
-  /**
-   * Mirrors `paused` for `resetTimer` to read.
-   *
-   * A ref rather than the state value because `resetTimer` is called from the
-   * pointer handlers, and those are deliberately kept free of React state —
-   * reading state mid-gesture is exactly the bug that made swipes fail on real
-   * phones. Keeping the pause check here means every existing caller of
-   * `resetTimer()` stays untouched and still does the right thing.
-   */
+  /** A ref, not the state value: read from the pointer handlers — C-11, C-13. */
   const pausedRef = useRef(false);
 
-  /**
-   * How far the finger has travelled, written straight to the DOM as a custom
-   * property the cards read.
-   *
-   * Deliberately not React state. State would re-render all twenty cards on
-   * every pointermove, and on a phone React falls far enough behind the
-   * gesture that the commit handler reads a distance of zero for a swipe that
-   * plainly happened — the flick is then discarded as a tap.
-   */
+  /** Drag distance goes straight to the DOM, never through state — C-11. */
   const setOffset = (px: number) => {
     trackRef.current?.style.setProperty('--drag', `${px}px`);
   };
@@ -279,8 +203,7 @@ export function AboutCarousel() {
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    // A visitor who pressed pause meant it — a later swipe or arrow press must
-    // not quietly start the deck moving again.
+    // Pause is sticky: a later swipe must not restart the deck — C-13.
     if (pausedRef.current) return;
     timerRef.current = setInterval(() => step(1), AUTOPLAY_MS);
   };
@@ -302,8 +225,7 @@ export function AboutCarousel() {
     const apply = () => {
       setReduceMotion(motion.matches);
       if (timerRef.current) clearInterval(timerRef.current);
-      // Someone who has asked for less motion should not have the page
-      // animating at them unprompted; the arrows still work.
+      // Reduced motion suppresses autoplay entirely; the arrows still work.
       if (!motion.matches) resetTimer();
     };
     apply();
@@ -321,9 +243,7 @@ export function AboutCarousel() {
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    // `timeStamp` is when the browser saw the event, not when this handler got
-    // to run. On a busy main thread those are far apart, and a flick judged on
-    // handler time reads as a slow, deliberate drag and gets rejected.
+    // `timeStamp`, not handler time — C-11.
     dragFrom.current = { x: e.clientX, at: e.timeStamp };
     setOffset(0);
     setDragging(true);
@@ -341,7 +261,7 @@ export function AboutCarousel() {
     if (!from) return;
     dragFrom.current = null;
 
-    // Both read off the event itself, so neither can lag behind the finger.
+    // Both off the event itself, so neither lags the finger — C-11.
     const dx = e.clientX - from.x;
     const elapsed = e.timeStamp - from.at;
     const width = stepPx();
@@ -349,14 +269,12 @@ export function AboutCarousel() {
     setDragging(false);
 
     if (width > 0) {
-      // Land where the finger actually left off. Committing a single card no
-      // matter how far the drag went makes a long swipe rubber-band backwards:
-      // the cards track your thumb across three cards, then snap back to one.
+      // Land where the finger left off; committing one card would rubber-band
+      // a long swipe backwards.
       let by = Math.round(-dx / width);
 
       if (by === 0) {
-        // Too short to round up to a card, but still deliberate — either a
-        // quick flick, which never had time to cover the distance, or a slower
+        // Too short to round up, but still deliberate: a flick, or a slower
         // drag that got a decent way across.
         const flicked = elapsed < FLICK_MS && Math.abs(dx) > MIN_FLICK_PX;
         if (flicked || Math.abs(dx) > width * COMMIT_RATIO) by = dx < 0 ? 1 : -1;
@@ -368,10 +286,7 @@ export function AboutCarousel() {
     if (!reduceMotion) resetTimer();
   };
 
-  /**
-   * The browser has claimed the gesture — a vertical page scroll, usually.
-   * Snap back rather than commit: the visitor was not swiping the carousel.
-   */
+  /** Browser claimed the gesture (a page scroll). Snap back, don't commit. */
   const onPointerCancel = () => {
     dragFrom.current = null;
     setOffset(0);
@@ -379,9 +294,8 @@ export function AboutCarousel() {
     if (!reduceMotion) resetTimer();
   };
 
-  // The tallest card in the current language, rendered invisibly in normal
-  // flow: the real cards are absolutely positioned and so can't give the track
-  // a height of its own.
+  // Rendered invisibly in flow to give the track a height — the real cards are
+  // absolutely positioned and cannot.
   const tallest = departmentHeads.reduce((a, b) =>
     b.roles[lang].length > a.roles[lang].length ? b : a,
   );
@@ -421,8 +335,7 @@ export function AboutCarousel() {
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerCancel}
-            // Vertical panning stays with the page; horizontal is ours to read
-            // as a swipe.
+            // Vertical panning stays with the page; horizontal is the swipe.
             className="relative touch-pan-y overflow-hidden pb-2"
           >
             <div aria-hidden className={`invisible ${CARD_WIDTH}`}>
@@ -432,11 +345,9 @@ export function AboutCarousel() {
             {departmentHeads.map((head, index) => {
               const slot = slotOf(index, active);
               const animate = !dragging && !reduceMotion && isAnimatedSlot(slot);
-              // At most three cards are on screen at the widest breakpoint.
-              // Anything outside that is hidden from assistive tech so the
-              // section reads as a few cards rather than a list of twenty.
-              // Erring wide on purpose: hiding a card that is actually visible
-              // would be the worse failure.
+              // Three cards show at the widest breakpoint; the rest are hidden
+              // from assistive tech. Erring wide — hiding a visible card is the
+              // worse failure.
               const offScreen = slot < 0 || slot > 2;
               return (
                 <div
@@ -445,17 +356,14 @@ export function AboutCarousel() {
                   aria-hidden={offScreen || undefined}
                   className={`absolute left-0 top-0 h-full ${CARD_WIDTH}`}
                   style={{
-                    // `100%` is the card's own width, so the step stays correct
-                    // at every breakpoint without measuring anything. `--drag`
-                    // is set on the track during a swipe, moving every card
-                    // together without going back through React.
+                    // `100%` is the card's own width, so the step is correct at
+                    // every breakpoint without measuring. `--drag` comes from
+                    // the track during a swipe — C-11.
                     transform: `translateX(calc(${slot} * (100% + ${GAP_PX}px) + var(--drag, 0px)))`,
                     transition: animate ? TRANSITION : 'none',
                   }}
                 >
-                  {/* Slots 0-2 are the three that can be on screen at the
-                      widest breakpoint, and `active` starts at 0 — so these
-                      are exactly the photos above the fold. */}
+                  {/* `active` starts at 0, so 0-2 are the visible cards. */}
                   <Card head={head} lang={lang} cdn={cdn} eager={index < 3} />
                 </div>
               );
@@ -463,15 +371,10 @@ export function AboutCarousel() {
           </div>
 
           {/*
-            Controls sit below the deck, never over it. Overlaying arrows on a
-            phone would put a tap target on top of the swipe surface at exactly
-            the edges a thumb starts from — the swipe is the primary gesture
-            here and nothing is allowed to compete with it.
-
-            Prev/next only appear below `sm`, where the floating arrows are
-            hidden; above that they would duplicate them. Pause shows at every
-            width: autoplaying content needs a stop control regardless of
-            screen size.
+            Below the deck, never over it: on a phone an overlaid arrow puts a
+            tap target exactly where a thumb starts its swipe. Prev/next show
+            only below `sm` where the floating arrows are hidden; pause shows at
+            every width, because autoplaying content needs a stop control.
           */}
           <div className="mt-5 flex items-center justify-center gap-3">
             <button
@@ -506,12 +409,7 @@ export function AboutCarousel() {
             </button>
           </div>
 
-          {/*
-            Announced only when the deck isn't moving on its own — otherwise a
-            screen reader would narrate a new name every 4.2 seconds, unasked.
-            With autoplay paused or reduced motion set, every move is the
-            visitor's own and worth reporting.
-          */}
+          {/* Announced only while the deck is not moving on its own — C-13. */}
           <span className="sr-only" aria-live={paused || reduceMotion ? 'polite' : 'off'}>
             {active + 1} {t.carouselOf} {COUNT} — {departmentHeads[active].name}
           </span>

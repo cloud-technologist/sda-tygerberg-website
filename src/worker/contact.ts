@@ -1,13 +1,9 @@
 /// <reference types="@cloudflare/workers-types" />
 
 export type ContactEnv = {
-  // Where a validated submission is delivered. Any endpoint accepting a JSON
-  // POST works (Zapier / Make / Apps Script / n8n / a church inbox webhook),
-  // which keeps the church off any one vendor. Set it as a Worker secret —
-  // it's a delivery address, and a public one invites spam.
-  //
-  // Until it's set the route answers `not-configured` and the form tells the
-  // visitor so, the same way the LIVE badge degrades (see liveStatus.ts).
+  // Any endpoint accepting a JSON POST. A Worker secret, not a build-time var:
+  // it is a delivery address, and a public one invites spam. Unset answers
+  // `not-configured` and the form says so.
   CONTACT_WEBHOOK_URL?: string;
 };
 
@@ -25,8 +21,7 @@ export type ContactResult = {
 
 const TOPICS: ContactTopic[] = ['connect', 'bible-study'];
 
-// Generous enough for a real message, tight enough that a bot can't post a
-// megabyte through the church's webhook.
+// Room for a real message; not room for a bot to post a megabyte.
 const LIMITS = {
   name: 80,
   email: 254,
@@ -55,12 +50,8 @@ function json(result: ContactResult, status: number): Response {
 }
 
 /**
- * Validates a submission and returns the cleaned payload, or the list of
- * fields that failed.
- *
- * Consent is a hard requirement, not a nicety: POPIA needs the visitor to
- * actively opt in before the church may store or act on their details, so a
- * missing `consent` is as fatal as a missing name.
+ * Validates a submission, returning the cleaned payload or the failed fields.
+ * Missing consent is as fatal as a missing name — CONCERNS.md C-20.
  */
 function validate(body: RawBody): { errors: string[]; clean?: Record<string, string> } {
   const errors: string[] = [];
@@ -77,9 +68,7 @@ function validate(body: RawBody): { errors: string[]; clean?: Record<string, str
   const phone = str(body.phone);
   if (phone.length > LIMITS.phone) errors.push('phone');
 
-  // Nothing to reply to otherwise. Either channel is fine — some people would
-  // rather be phoned than emailed, and requiring both collects more personal
-  // data than answering the request actually needs.
+  // Either channel is fine; requiring both collects more than is needed (C-20).
   if (!email && !phone) errors.push('contact');
 
   const message = str(body.message);
@@ -102,28 +91,23 @@ async function forward(url: string, payload: unknown): Promise<boolean> {
     });
     return res.ok;
   } catch {
-    // Timeout, DNS, TLS — the caller turns this into `forward-error` so the
-    // visitor is told to try again rather than believing it was delivered.
+    // Timeout, DNS, TLS. Becomes `forward-error` — C-19.
     return false;
   }
 }
 
 /**
- * Handles POST /api/contact for the /connect and /bible-studies forms.
- *
- * Never reports success it can't back up: a submission is only `forwarded`
- * once the webhook has actually accepted it. Silently swallowing a failed
- * delivery would leave someone waiting for a reply that was never going to
- * come.
+ * POST /api/contact for the /connect and /bible-studies forms. Only reports
+ * `forwarded` once the webhook has actually accepted it — CONCERNS.md C-19.
  */
 export async function handleContact(request: Request, env: ContactEnv): Promise<Response> {
   if (request.method !== 'POST') {
     return json({ ok: false, outcome: 'invalid', errors: ['method'] }, 405);
   }
 
-  // Content-Length is a claim, not a fact: a chunked request can omit it and a
-  // junk value parses to NaN, either of which slips past a `>` test. Keep it
-  // as a cheap early-out, but let the measured size be the one that decides.
+  // Content-Length is a claim, not a fact — a chunked request omits it and junk
+  // parses to NaN, both slipping past a `>` test. Cheap early-out only; the
+  // measured size decides.
   const declaredLength = Number(request.headers.get('content-length') ?? '0');
   if (declaredLength > MAX_BODY_BYTES) {
     return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 413);
@@ -148,9 +132,7 @@ export async function handleContact(request: Request, env: ContactEnv): Promise<
     return json({ ok: false, outcome: 'invalid', errors: ['body'] }, 400);
   }
 
-  // Bot filtering is Cloudflare's job, not this handler's — Bot Fight Mode and
-  // the WAF rate-limiting rule sit in front of this route at the edge (see
-  // SETUP-INSTRUCTIONS.md §3.5).
+  // Bot filtering is Cloudflare's, at the edge — CONCERNS.md C-21.
   const { errors, clean } = validate(body);
   if (!clean) return json({ ok: false, outcome: 'invalid', errors }, 400);
 

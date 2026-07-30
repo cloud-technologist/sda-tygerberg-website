@@ -12,11 +12,8 @@
   .leaflet-popup-content { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13.5px; color: #17252e; }
   .leaflet-popup-content b { color: #0b3d54; }
 
-  /*
-   * The marker is the church's own symbol rather than Leaflet's default blue
-   * teardrop. A cream ring lifts the navy disc off the map tiles, which run
-   * from pale road fill to mid-green parkland.
-   */
+  /* The church's symbol, not Leaflet's teardrop. The cream ring lifts the navy
+     disc off tiles that run from pale road fill to mid-green parkland. */
   .church-marker {
     border-radius: 50%;
     background: #f6f2e9;
@@ -29,32 +26,10 @@
 <script>
   const lat = -33.8974, lng = 18.6235;
 
-  /*
-   * One-finger dragging is off on touch devices, and the wheel never zooms.
-   *
-   * This map sits in an iframe partway down a long page. With dragging on, a
-   * thumb that lands on the map pans it instead of scrolling the page, and the
-   * visitor is stuck. That is what the old "tap to interact" overlay existed to
-   * prevent — disabling the gesture that traps them removes the need to cover
-   * the map with a button explaining itself. Zoom buttons still work, and the
-   * directions links above the map handle real navigation.
-   *
-   * Mouse dragging stays on: a desktop drag doesn't compete with page scroll.
-   */
-  /*
-   * No attribution control on the map itself. The credit has not been dropped —
-   * it is required and it moved: VisitMap.tsx renders it immediately below the
-   * iframe, which the OSMF attribution guidelines explicitly permit ("the
-   * attribution may be placed adjacent to the map"). That gets a white box off
-   * a small map without under-crediting anyone.
-   *
-   * If this map is ever embedded somewhere that does not render its own credit
-   * line, the credit has to come back here — set `attributionControl` back to
-   * its default and give the tile layer its `attribution` option again.
-   *
-   * Leaflet's own "Leaflet" prefix is a courtesy, not a licence term (it is
-   * BSD-2-Clause), so nothing needs to replace that half.
-   */
+  /* One-finger drag off on touch, wheel never zooms — CONCERNS.md C-28.
+     Mouse dragging stays on; a desktop drag doesn't compete with page scroll. */
+  // No tile attribution anywhere, by decision — see CONCERNS.md C-01 before
+  // reinstating or removing this.
   const map = L.map('map', {
     scrollWheelZoom: false,
     dragging: !L.Browser.mobile,
@@ -66,13 +41,9 @@
     maxZoom: 19
   }).addTo(map);
 
-  // Points at a committed derivation of the official mark rather than
-  // repeating the artwork here; a relative path resolves correctly both at the
-  // domain root and under the GitHub Pages base path.
-  //
-  // map-marker.svg, not favicon.svg: the favicon carries a navy plate so it
-  // survives a 16px tab strip, and a marker does not need one — at 40px over
-  // map tiles the bare mark already reads.
+  // A committed derivation of the official mark; a relative path resolves at
+  // both the domain root and the Pages base. Not favicon.svg — that one carries
+  // a plate the marker does not need (C-27).
   const icon = L.icon({
     iconUrl: 'map-marker.svg',
     iconSize: [40, 40],

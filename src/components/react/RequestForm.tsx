@@ -4,12 +4,9 @@ import { withBase } from '../../lib/base';
 import { requestFormCopy, type RequestTopic, type TopicCopy } from '../../data/requestCopy';
 
 /**
- * The shared request form behind /connect and /bible-studies. Posts to the
- * Worker's /api/contact route (src/worker/contact.ts).
- *
- * The GitHub Pages devtest build sets PUBLIC_HAS_API=false — there's no Worker
- * there, so the form renders read-only with a notice rather than accepting a
- * submission it can't deliver. The var is inlined at build time, so server and
+ * The shared request form behind /connect and /bible-studies, posting to
+ * /api/contact. `PUBLIC_HAS_API=false` renders it read-only where there is no
+ * Worker (C-22). The var is inlined at build time, so server and
  * client agree and hydration stays clean.
  */
 const HAS_API = import.meta.env.PUBLIC_HAS_API !== 'false';
@@ -89,10 +86,9 @@ export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicC
   };
 
   /**
-   * Send focus to the first invalid field, or to the message if the problem
-   * isn't a field. Keyed on `attempt` rather than the error list: submitting
-   * twice with the same fault changes nothing in the DOM, and without this the
-   * second attempt would be met with total silence on a screen reader.
+   * Focus the first invalid field. Keyed on `attempt`, not the error list — the
+   * same fault twice changes nothing in the DOM, and a screen reader would meet
+   * the second attempt with silence.
    */
   useEffect(() => {
     if (attempt === 0) return;
@@ -142,8 +138,7 @@ export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicC
           email: values.email.trim(),
           phone: values.phone.trim(),
           message: values.message.trim(),
-          // The checkbox state, not a constant — otherwise the Worker's consent
-          // check verifies nothing and the POPIA record traces to a literal.
+          // The checkbox state, not a constant, or the consent record is a lie.
           consent,
         }),
       });
@@ -158,13 +153,12 @@ export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicC
       if (data?.outcome === 'not-configured') fail([], t.errNotConfigured);
       else if (data?.outcome === 'forward-error') fail([], t.errForward);
       else if (data?.outcome === 'invalid') {
-        // A rejection on `body`, `message` or `topic` has no field to highlight;
-        // "check the highlighted fields" would highlight nothing at all.
+        // These have no field to highlight, so don't say "highlighted fields".
         const shown = (data.errors ?? []).filter((f) => SHOWABLE.includes(f));
         fail(shown, shown.length > 0 ? t.errValidation : t.errUnexpected);
       } else fail([], t.errNetwork);
     } catch {
-      // Offline, DNS, a 404 body that isn't JSON — never claim it was sent.
+      // Offline, DNS, non-JSON body — never claim it was sent (C-19).
       fail([], t.errNetwork);
     }
   };
@@ -365,8 +359,7 @@ export function RequestForm({ topic, copy }: { topic: RequestTopic; copy: TopicC
       </fieldset>
 
       {status === 'error' && message && (
-        // Keyed on the attempt so a repeated failure remounts the alert and is
-        // announced again instead of passing in silence.
+        // Keyed on attempt so a repeated failure is re-announced.
         <p
           key={attempt}
           ref={alertRef}

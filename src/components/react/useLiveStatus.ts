@@ -1,19 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Polls the Worker's /api/live-status route to decide whether to show the
- * LIVE badge. The route only exists under `wrangler dev` or a real deploy.
- *
- * The GitHub Pages build sets PUBLIC_HAS_API=false to skip polling entirely,
- * since that deploy has no Worker and the route would 404 forever. Under
- * plain `astro dev` the var is unset, so the hook *does* poll and each
- * request 404s — harmless (the badge just stays hidden) and left deliberately
- * rather than stopping on 404: a 404 in production means a bad deploy or a
- * mid-deploy blip, and the badge has to recover once that resolves. Use
- * `npm run worker:dev` to exercise the route locally.
- *
- * Every failure mode resolves to "not live": the badge is decorative, and the
- * video embed below it works regardless.
+ * Polls /api/live-status for the LIVE badge. The route exists only under
+ * `wrangler dev` or a real deploy; `astro dev` 404s harmlessly, and the loop
+ * deliberately keeps going. Every failure resolves to "not live" — the badge is
+ * decorative. CONCERNS.md C-17, C-22.
  */
 
 /** One cadence for every case — open, closed, or failed. */
@@ -37,18 +28,14 @@ export function useLiveStatus(): boolean {
         const res = await fetch('/api/live-status');
         const data = res.ok ? ((await res.json()) as LiveStatusResponse) : null;
         if (cancelled) return;
-        // Clear the badge on a non-answer too. Without this a 5xx or a deploy
-        // blip mid-stream would leave LIVE pinned on indefinitely, since
-        // nothing would ever set it back to false.
+        // A non-answer clears the badge too, or a 5xx pins it on — C-17.
         setIsLive(Boolean(data?.isLive));
       } catch {
         if (cancelled) return;
         setIsLive(false);
       }
 
-      // Always reschedule, whatever happened above. A failed or unanswerable
-      // check must not end the polling loop — the badge has to be able to
-      // recover on its own once the Worker or the API comes back.
+      // Always reschedule: the loop must never terminate — C-17.
       if (!cancelled) timeoutRef.current = setTimeout(check, POLL_INTERVAL_MS);
     };
 

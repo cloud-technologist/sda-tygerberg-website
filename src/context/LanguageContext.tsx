@@ -20,9 +20,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // statically pre-rendered HTML; the stored choice is applied on mount.
   const [lang, setLang] = useState<Lang>(DEFAULT_LANG);
 
-  // Home and /beliefs are separate documents with separate React roots, so
-  // without this the language toggle resets every time you navigate between
-  // them (pick English on the home page, land back on Afrikaans in beliefs).
+  // Separate documents have separate React roots, so without this the toggle
+  // resets on every navigation between them.
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -35,10 +34,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Kept out of the try below on purpose. This can't throw, and grouping it
-    // with localStorage meant that blocked site data (Safari private mode)
-    // skipped it too — leaving English content announced with Afrikaans
-    // pronunciation, which is the one part here that actually matters.
+    // Outside the try on purpose: this can't throw, and grouping it with
+    // localStorage meant blocked storage skipped it too — leaving English
+    // content announced with Afrikaans pronunciation.
     document.documentElement.lang = lang;
 
     try {
