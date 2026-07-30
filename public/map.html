@@ -41,14 +41,28 @@
    *
    * Mouse dragging stays on: a desktop drag doesn't compete with page scroll.
    */
+  /*
+   * No attribution control on the map itself. The credit has not been dropped —
+   * it is required and it moved: VisitMap.tsx renders it immediately below the
+   * iframe, which the OSMF attribution guidelines explicitly permit ("the
+   * attribution may be placed adjacent to the map"). That gets a white box off
+   * a small map without under-crediting anyone.
+   *
+   * If this map is ever embedded somewhere that does not render its own credit
+   * line, the credit has to come back here — set `attributionControl` back to
+   * its default and give the tile layer its `attribution` option again.
+   *
+   * Leaflet's own "Leaflet" prefix is a courtesy, not a licence term (it is
+   * BSD-2-Clause), so nothing needs to replace that half.
+   */
   const map = L.map('map', {
     scrollWheelZoom: false,
     dragging: !L.Browser.mobile,
-    tap: false
+    tap: false,
+    attributionControl: false
   }).setView([lat, lng], 16);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19
   }).addTo(map);
 
