@@ -52,11 +52,15 @@
     maxZoom: 19
   }).addTo(map);
 
-  // Points at favicon.svg rather than repeating the artwork: that file is
-  // already the official mark, and a relative path resolves correctly both at
-  // the domain root and under the GitHub Pages base path.
+  // Points at a committed derivation of the official mark rather than
+  // repeating the artwork here; a relative path resolves correctly both at the
+  // domain root and under the GitHub Pages base path.
+  //
+  // map-marker.svg, not favicon.svg: the favicon carries a navy plate so it
+  // survives a 16px tab strip, and a marker does not need one — at 40px over
+  // map tiles the bare mark already reads.
   const icon = L.icon({
-    iconUrl: 'favicon.svg',
+    iconUrl: 'map-marker.svg',
     iconSize: [40, 40],
     iconAnchor: [20, 20],
     popupAnchor: [0, -18],
