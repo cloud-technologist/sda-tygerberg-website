@@ -3,19 +3,11 @@
 import { isValidCronWindow, isWithinCronWindow } from './cronWindow';
 
 export type LiveStatusEnv = {
-  // Both required for a real check — set as Worker secrets (Workers & Pages ->
-  // tygerberg-sda-website -> Settings -> Variables and Secrets), never as a
-  // build-time/Actions variable, which would bake the key into the public bundle.
+  // Worker secrets, never build-time variables — CONCERNS.md C-18.
   YOUTUBE_API_KEY?: string;
   YOUTUBE_CHANNEL_ID?: string;
-  // 5-field cron expression read as a *window* (see cronWindow.ts). YouTube is
-  // only called while "now" falls inside it; the other six days of the week
-  // cost zero quota. Defaults to the Sabbath morning service.
-  //
-  // The minute field should stay `*`: it decides whether the window is open,
-  // not how often YouTube is polled. Narrowing it (`*\/5`) would close the
-  // window between marks and make the badge blink out. Poll rate is set on the
-  // client (see useLiveStatus.ts).
+  // 5-field cron read as a *window*, not a schedule. Keep the minute field
+  // `*` — CONCERNS.md C-14.
   LIVE_CHECK_CRON?: string;
   // IANA timezone the window is evaluated in.
   LIVE_CHECK_TZ?: string;
@@ -59,12 +51,8 @@ async function askYouTube(apiKey: string, channelId: string): Promise<boolean | 
 }
 
 /**
- * Resolves whether the channel is currently streaming, spending YouTube API
- * quota only inside the configured window.
- *
- * No server-side caching: every in-window request is a live call to YouTube.
- * `search.list` costs 100 quota units against a 10,000/day default, so cost
- * scales with concurrent viewers — see the README quota note.
+ * Is the channel streaming? Spends quota only inside the configured window, and
+ * there is no server-side caching — CONCERNS.md C-16.
  */
 export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promise<LiveStatusResult> {
   const cron = env.LIVE_CHECK_CRON?.trim() || DEFAULT_CRON;
@@ -93,8 +81,7 @@ export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promi
 
   const isLive = await askYouTube(env.YOUTUBE_API_KEY, env.YOUTUBE_CHANNEL_ID);
   if (isLive === null) {
-    // Network hiccup or quota exhaustion — hide the badge rather than guess.
-    // The client keeps polling on its normal cadence and recovers on its own.
+    // Hiccup or exhausted quota: hide the badge, let the client recover.
     return { isLive: false, source: 'api-error', checkedAt, window };
   }
 

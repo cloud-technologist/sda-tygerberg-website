@@ -2,12 +2,10 @@ import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 
 /**
- * The practical questions a first-time visitor has and the site otherwise
- * doesn't answer: parking, children, access, what to wear.
- *
- * Renders nothing until the church supplies answers. The plumbing ships now so
- * that filling it in is a data-only edit in `homeCopy.ts` — but a half-built
- * section reassuring people about a building nobody has described would be
+ * Parking, children, access, what to wear — renders nothing until the church
+ * supplies answers, so filling it in is a data-only edit in `homeCopy.ts`. A
+ * half-built section reassuring people about a building nobody has described
+ * would be
  * worse than no section at all, so an empty list means no section.
  */
 export function FirstVisit() {

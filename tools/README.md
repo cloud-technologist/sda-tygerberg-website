@@ -3,6 +3,10 @@
 Authoring helpers. Nothing here runs during `npm run build` or on deploy — these
 are one-off scripts whose *output* is committed.
 
+After regenerating any icon, confirm a browser actually *draws* it
+(`naturalWidth > 0`), not merely that the file contains the right path data —
+CONCERNS.md C-26.
+
 ## build-headshots.mjs
 
 Builds the fallback copies of the department-head headshots:

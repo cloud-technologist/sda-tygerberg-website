@@ -1,7 +1,4 @@
-// Imported as raw markup rather than as an <img> src so the symbol inherits
-// `currentColor`. It appears on cream in the headers and on navy in the
-// footers, and the official identity has both a solid and a reversed treatment
-// — one file that takes its colour from context serves both.
+// Raw markup, not an <img>, so the symbol inherits `currentColor` — C-25.
 import symbol from '../../assets/sda-symbol.svg?raw';
 
 type LogoProps = {
@@ -11,15 +8,8 @@ type LogoProps = {
 };
 
 /**
- * The official Seventh-day Adventist symbol: the open Bible, the cross, and
- * the flame of the Holy Spirit rising from it.
- *
- * The mark is a trademark of the General Conference of Seventh-day Adventists,
- * used here by a member congregation. It is reproduced from the official
- * artwork rather than redrawn — the identity system governs its proportions,
- * so an approximation that merely resembles it would be wrong on both counts.
- * Colour is the only permitted variation applied here; the geometry is
- * untouched.
+ * The official Seventh-day Adventist symbol. A General Conference trademark:
+ * colour is the only permitted variation — CONCERNS.md C-25.
  */
 export function Logo({ size = 38, color = 'var(--color-navy)' }: LogoProps) {
   return (

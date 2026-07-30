@@ -1,0 +1,339 @@
+# Concerns
+
+Why the code is the way it is, and what breaks if you change it back.
+
+A living document. Code carries a one-line note and a `C-NN` reference instead
+of a paragraph; the paragraph lives here. Add entries as decisions get made,
+and amend one when a decision changes rather than deleting the history of it.
+
+The [README](./README.md) covers how to operate and maintain the site. This
+file covers the traps.
+
+---
+
+## Licensing
+
+### C-01 — The map carries no tile attribution
+
+`public/map.html` sets `attributionControl: false`, and nothing renders an
+OpenStreetMap credit anywhere on the page.
+
+**This is a known breach**, decided by the repo owner. OSM tiles come under the
+ODbL and the [OSMF tile usage policy](https://operations.osmfoundation.org/policies/tiles/),
+both of which require a visible credit.
+
+The practical risk is not litigation, it is the OSMF blocking tile requests for
+the domain — at which point the map goes blank with nothing in the code to
+explain why. That is a human enforcement action, not an automatic one, so it may
+never happen; if the map ever does go blank for no other reason, look here
+first.
+
+Two ways out if that becomes a problem: restore the credit (Leaflet's own
+"Leaflet" prefix is a courtesy and never needed — it is BSD-2-Clause — and the
+OSMF guidelines allow the credit *adjacent to* the map rather than on it), or
+move to a tile provider whose terms do not require visible attribution.
+
+---
+
+## Images
+
+### C-02 — The headshot originals must never reach a browser
+
+`public/images/hod/TG-DH-*.jpg` are 7-10 MB, ~21 MP studio files. They exist to
+be Cloudflare's transform source and nothing else. Every path that could serve
+one to a visitor is deliberately closed off — see C-05, C-08 and C-09.
+
+### C-03 — `HEADSHOT_SIZES` and `CARD_WIDTH` are one decision in two files
+
+`HEADSHOT_SIZES` (`src/lib/cdnImage.ts`) tells the browser how wide the card
+will render so it can pick a `srcset` candidate. `CARD_WIDTH`
+(`AboutCarousel.tsx`) is what actually renders. Change one without the other and
+every card downloads the wrong size — silently, and it looks fine on a fast
+desktop.
+
+The current values assume the card sits in `max-w-content px-7` (1180px cap,
+56px padding) at `w-[72%] sm:w-[45%] lg:w-[31%]`.
+
+### C-04 — The fallback copies must not be narrower than the widest srcset entry
+
+`MASTER_WIDTH` in `tools/build-headshots.mjs` must stay ≥ the largest
+`HEADSHOT_WIDTHS` entry. `fit=scale-down` never upscales, so a smaller master
+silently serves a smaller image than the layout asked for.
+
+### C-05 — An image can fail before React hydrates
+
+The carousel is server-rendered, so the browser starts — and can finish failing
+— the eager images before React attaches any handler. An `error` event that has
+already fired is never replayed. `onError` alone therefore misses exactly the
+above-the-fold images that matter most.
+
+`Headshot` also checks, as it adopts the node, for an image that is `complete`
+with `naturalWidth === 0` — the signature of one that finished and failed.
+
+Symptom if this regresses: the first two or three cards show a broken-image icon
+while the rest are fine.
+
+### C-06 — A percentage height inside an `aspect-ratio` box resolves to `auto`
+
+The photo box takes its height from `aspect-ratio` alone, with no height of its
+own. `h-full` on a child therefore resolves to `auto`, and a 2:3 portrait
+renders at its own ratio — overflowing the box and pushing the name down the
+card (361px tall in a 301px box, measured).
+
+The image is positioned `absolute inset-0` against the box instead. Do not
+"simplify" it back to `h-full w-full` in flow.
+
+### C-07 — The two image qualities are set to different numbers on purpose
+
+`IMAGE_TRANSFORM_OPTIONS` uses `quality=82`; `tools/build-headshots.mjs` uses
+90. They pay for different things.
+
+A transform is per request, and AVIF stops being cheap right after 85. Measured
+live at `width=640`: 21 kB at q75, 24 kB at 82, 27 kB at 85, 46 kB at 90,
+102 kB at 95. So q90 would roughly double every visitor's bytes for a photo
+displayed in a 348px card. 85 is a cheap step up if more headroom is ever
+wanted.
+
+The fallback copies are fetched once into the repo and only served when there is
+no transformer, so the same step costs repo weight once and nothing per visitor.
+SSIM against a lossless render of the same resize, mean over four headshots:
+0.9733 at 82, 0.9761 at 85, 0.9812 at 90, 0.9876 at 95 — size climbing far
+faster than SSIM past 90.
+
+### C-08 — No `onerror=redirect` on transform URLs
+
+That option hands the visitor the transform's *source* when a transform fails
+fatally, and the source is the multi-megabyte original (C-02). The fallback copy
+is the right answer and the component reaches it on its own.
+
+### C-09 — The transformer is probed, not assumed
+
+Two mechanisms pick between a transform URL and a fallback copy:
+
+1. `PUBLIC_IMAGE_CDN=false` at build time, for an environment known to have no
+   transformer (the devtest Pages build — C-21).
+2. One `HEAD` to a `/cdn-cgi/image/...` URL on hydration, shared by every card.
+
+Without the probe each card discovers the answer by failing: a 404 per photo,
+and the visitor watches them arrive one at a time. The probed URL is already in
+the first card's `srcset`, so the check costs no bytes and no extra billable
+transformation.
+
+Until it answers, cards render transform URLs. That is deliberately optimistic —
+it matches the server-rendered HTML, so hydration lines up and the visible
+images are already in flight.
+
+`fetch` resolving is not success: a 404 page is a perfectly successful fetch, so
+the probe checks the status *and* an `image/*` content-type.
+
+### C-10 — Unique transformations are billed per source image per option set
+
+Adding a second variant of `IMAGE_TRANSFORM_OPTIONS`, or another entry in
+`HEADSHOT_WIDTHS`, multiplies the count. Keep both lists short.
+
+---
+
+## Carousel
+
+### C-11 — Gesture handling is deliberately kept out of React state
+
+Writing drag offset to React state re-renders every card on every
+`pointermove`, and on a phone React falls far enough behind the gesture that the
+commit handler reads a distance of zero for a swipe that plainly happened — the
+flick gets discarded as a tap. The offset goes straight to the DOM as a custom
+property the cards read.
+
+For the same reason both `dx` and `elapsed` come off the event itself:
+`timeStamp` is when the browser saw the event, not when the handler ran, and on
+a busy main thread a flick judged on handler time reads as a slow drag and gets
+rejected.
+
+### C-12 — Card position is modular arithmetic, not accumulated offset
+
+`slotOf` makes every card's position a pure function of `active`, so the ring is
+circular in both directions with no duplicated markup and no scroll offset that
+can drift out of alignment.
+
+Cards wrap round the back of the ring and jump the full width of the roster when
+they do. That jump must never be seen crossing the viewport, which is what
+`ANIMATE_SPAN` is for — anything outside it moves without animating.
+
+### C-13 — A visitor who pressed pause meant it
+
+`resetTimer` reads a ref rather than state so that a later swipe or arrow press
+cannot quietly restart autoplay. Reduced-motion preference suppresses autoplay
+entirely; the arrows still work.
+
+The live region only announces while the deck is *not* moving on its own —
+otherwise a screen reader narrates a new name every 4.2 seconds, unasked.
+
+---
+
+## LIVE badge and API quota
+
+### C-14 — `LIVE_CHECK_CRON` is a window, not a schedule
+
+It is read as a predicate on the current time, so `* 6-11 * * 6` means "any
+minute from 06:00 to 11:59 on Saturdays".
+
+**Keep the minute field `*`.** It decides whether the window is open, not how
+often YouTube is polled. `*/5 9-11 * * 6` would close the window for four
+minutes out of every five and make the badge blink. Poll rate is
+`POLL_INTERVAL_MS` in `useLiveStatus.ts`.
+
+Day-of-week `6` is Saturday — cron counts from `0` = Sunday, so `7` would select
+Sunday.
+
+The window closes at 12:00 while the Divine Service starts at 11:00, so a
+service running past noon loses the badge. Widen the hour field if that matters.
+
+### C-15 — A malformed window fails closed
+
+A bad cron expression or unknown timezone returns `invalid-schedule` and spends
+zero quota, rather than quietly matching everything. `matchField` validates term
+*shape* before parsing, because `Number('')` is 0 — a bare `split('-')` would
+read `-11` as `0-11` and swing the window open from midnight.
+
+### C-16 — There is no server-side caching, so quota scales with viewers
+
+`search.list` costs 100 units against 10,000/day. One viewer across a 3-hour
+window is ~3,600 units; three concurrent viewers exceed the free tier. An
+`api-error` late in a service is almost always exhausted quota. Levers: a
+narrower window, a longer `POLL_INTERVAL_MS`, or a raised quota.
+
+### C-17 — The poll loop must never terminate
+
+A failed or unanswerable check reschedules like any other, so the badge recovers
+on its own once the Worker or the API comes back. A non-answer also clears the
+badge — without that, a 5xx mid-stream would leave LIVE pinned on forever.
+
+### C-18 — The API key must be a Worker secret, never a build-time variable
+
+An Actions secret alone never reaches the Worker. The production workflow
+carries the two YouTube values across explicitly via the deploy step's
+`secrets:` input.
+
+That step's `env:` block is scoped to the step **on purpose** — hoisting it to
+job level puts `YOUTUBE_API_KEY` in the environment during `npm run build`,
+where it can reach the client bundle.
+
+---
+
+## Contact form
+
+### C-19 — Success is never reported on a delivery that did not happen
+
+The `outcome` a visitor sees reflects what actually occurred. Leaving someone
+waiting for a reply that was never coming is worse than showing an error.
+
+### C-20 — POPIA shapes what the form asks and what it stores
+
+It asks the minimum needed to reply — a name plus an email *or* a phone number,
+not both — and will not submit without an explicitly ticked consent box, which
+is validated server-side too so a crafted request cannot skip it. The forwarded
+payload records `consent` and `submittedAt`, because consent must be
+demonstrable after the fact and the church's inbox is the only place the
+submission survives.
+
+Related: no phone numbers or email addresses appear anywhere in site content —
+they were stripped site-wide, and `/connect` is the compliant route to a person.
+Do not reintroduce them, including on the department-head cards.
+
+### C-21 — Abuse protection is Cloudflare's, and it is off by default
+
+The Worker validates and forwards; it does no bot detection. Bot Fight Mode and
+a WAF rate-limiting rule sit in front of `/api/contact` at the edge.
+
+Neither is on by default, and both need a custom domain — a `*.workers.dev` URL
+gets no zone protection. Until they are enabled the endpoint is unprotected.
+Turnstile is the next step up and needs code: a widget plus a `siteverify` call
+before forwarding.
+
+---
+
+## Environments
+
+### C-22 — The devtest build has no Worker and no transformer
+
+GitHub Pages serves static files only, so `/api/*` and `/cdn-cgi/*` do not
+exist there. `PUBLIC_HAS_API=false` skips the live-status poll and renders the
+contact form read-only; `PUBLIC_IMAGE_CDN=false` serves the fallback headshots
+(C-09).
+
+### C-23 — The preview advertises production canonicals
+
+The Pages copy is publicly crawlable and cannot be covered by a `robots.txt` —
+that only works at a domain root we do not own. `PUBLIC_INDEXABLE=false` emits
+`noindex,nofollow` and `canonicalPath` strips the Pages base so canonicals point
+at production. Both exist to stop the preview competing with the real site in
+search results.
+
+### C-24 — Unhashed assets get `max-age=0` unless told otherwise
+
+Workers static assets default to `max-age=0, must-revalidate`, which pins every
+Cloudflare image variant to a 300s floor and has the transformer re-pulling a
+multi-MB original all day. `public/_headers` sets a week on `/images/hod/*`.
+
+A week rather than a year because these filenames carry no content hash, so
+replacing a photo reuses its URL; a cache purge makes a swap immediate and this
+bounds how long a stale copy can linger for anyone who missed it.
+
+---
+
+## Identity
+
+### C-25 — The SDA symbol may be recoloured and nothing else
+
+`src/assets/sda-symbol.svg` is the only copy of the artwork, reproduced from the
+official version. It is a General Conference trademark used by a member
+congregation, and the identity system governs its proportions — it must never be
+redrawn, simplified or distorted to fit a layout, including to make it legible
+at small sizes (C-27).
+
+`favicon.svg`, `map-marker.svg` and `apple-touch-icon.png` are committed
+derivations. Their path data is byte-identical to the source.
+
+`Logo.tsx` imports it as raw markup (`?raw`) rather than as an `<img>` so it
+inherits `currentColor` — navy on cream headers, cream on navy footers, from one
+file.
+
+### C-26 — An SVG needs a default `xmlns` to render as a standalone file
+
+`favicon.svg` once declared `xmlns:svg` but no default `xmlns`, inherited from
+the source artwork. That renders fine *inline*, which is why every check passed,
+but it is invalid as a standalone image and the favicon silently drew nothing.
+
+Verifying that a file *contains* the right path data is not the same as
+verifying a browser will *draw* it. Assert `naturalWidth > 0`.
+
+### C-27 — The favicon needs a plate at 16px
+
+The bare navy mark is `#0b3d54` on a `#202124` tab strip: almost no contrast,
+and at 16px it reads as a smudge. On a light strip the same file is fine, so
+this is specifically a dark-mode failure.
+
+The mark is reversed out of a navy plate, which gives both tones something to
+contrast against whatever the strip is doing, and matches how
+`apple-touch-icon.png` already treats it.
+
+A plate rather than a recolour or a `prefers-color-scheme` swap because the
+16px problem is not only contrast: the flame's internal strokes merge at that
+size whatever colour they are, and the artwork cannot be redrawn to simplify
+them (C-25). A plate keeps the silhouette identifiable once the detail is gone.
+
+The map marker keeps the bare mark — at 40px over map tiles it already reads,
+and a plate there is chrome the map does not need.
+
+---
+
+## Map
+
+### C-28 — One-finger drag is disabled on touch
+
+The map sits in an iframe partway down a long page. With dragging on, a thumb
+that lands on it pans the map instead of scrolling the page and the visitor is
+stuck. Disabling the gesture is what removed the need for a "tap to interact"
+overlay covering the map.
+
+Zoom buttons still work, mouse dragging still works on desktop, and the
+directions links above the map handle real navigation.
