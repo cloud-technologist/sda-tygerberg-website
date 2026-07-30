@@ -362,18 +362,16 @@ original handoff and are **not** blockers for this MVP:
 
 1. **Department head photos** — partly resolved: 11 of the 21 cards now carry
    a studio headshot (see "Department head photos" above for how to add the
-   rest). Two things still need the board:
+   rest). Still outstanding:
 
    - Headshots for the remaining 10 — Arnold Neuhoff, Lisa Branders, Morné
      Louw, Adéle Meyer, Chris Meyer, Gert Coetzee, Peter Wallace, Sanet
      Stevens, Bertie Hoffman and the Louw family.
-   - **Laura's surname.** She chairs the Persoonlike Bedieningkomitee &
-     Evangelisasie and now has a card, but the board supplied the portfolio
-     without a full name, so the card reads just "Laura" — the only
-     single-name entry other than "Louw Familie". Her card also fills a gap in
-     the Ampsdraers 2025/2026 roster, which records Personal Ministries only
-     as one of the elder's titles and lists no chair for the committee itself;
-     worth confirming the roster is what needs updating rather than the site.
+   - **The roster is missing an entry.** Laura Rolff chairs the Persoonlike
+     Bedieningkomitee & Evangelisasie and has a card here, but the Ampsdraers
+     2025/2026 roster this list was built from records Personal Ministries only
+     as one of the elder's titles and names no chair for the committee itself.
+     The site is the more current of the two; worth correcting the roster.
 2. ~~**"Get involved" contacts**~~ — resolved: Connect and Bible Studies now
    lead to `/connect` and `/bible-studies`, which collect a request behind an
    explicit POPIA consent checkbox and post it to `/api/contact` (see

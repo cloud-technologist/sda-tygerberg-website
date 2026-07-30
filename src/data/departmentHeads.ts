@@ -58,10 +58,7 @@ export const departmentHeads: DepartmentHead[] = [
   },
   {
     id: 'persoonlike-bediening',
-    // Surname still outstanding — the board gave the portfolio, not the full
-    // name. One word to fix here when it arrives; `id` is what the carousel
-    // keys on, so it will not move when it does.
-    name: 'Laura',
+    name: 'Laura Rolff',
     // Sits next to Jaco on purpose. He holds "Persoonlike Bediening" as an
     // elder, she chairs the committee under it, and the roster the rest of this
     // list came from records only his half — so the adjacency is what says
