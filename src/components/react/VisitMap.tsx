@@ -8,7 +8,6 @@ export function VisitMap() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
   const [copied, setCopied] = useState(false);
-  const [mapActive, setMapActive] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -79,21 +78,10 @@ export function VisitMap() {
         <div className="relative min-h-[300px] overflow-hidden rounded-card-lg">
           <iframe
             src={withBase('/map.html')}
-            title="Map"
+            title="Tygerberg SDA Kerk — kaart"
             loading="lazy"
             className="h-full min-h-[300px] w-full border-0"
           />
-          {!mapActive && (
-            <button
-              type="button"
-              onClick={() => setMapActive(true)}
-              className="absolute inset-0 flex items-center justify-center bg-navy/10"
-            >
-              <span className="rounded-pill bg-navy-deep/90 px-5 py-2.5 text-sm font-semibold text-white">
-                {t.mapTapHint}
-              </span>
-            </button>
-          )}
         </div>
       </div>
     </section>

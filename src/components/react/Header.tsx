@@ -27,7 +27,18 @@ function DirectionsLink({ onClick, className = '' }: { onClick?: () => void; cla
       onClick={onClick}
       className={`h-8 inline-flex shrink-0 items-center justify-center gap-1.5 rounded-pill border border-orange bg-orange/5 px-2.5 sm:px-3.5 text-[11px] sm:text-xs font-bold text-navy hover:bg-orange hover:text-white transition-colors ${className}`}
     >
-      <span className="inline-block h-[7px] w-[7px] rotate-45 rounded-[0_50%_50%_50%] border-[1.5px] border-current" />
+      {/* A navigation arrow, not the teardrop that used to sit here — that
+          shape echoed the placeholder logo the site no longer uses, and a
+          pin next to "Directions" said "location" where the link means "take
+          me there". */}
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 16 16"
+        className="h-3 w-3 flex-none"
+        fill="currentColor"
+      >
+        <path d="M14.6 1.4 1.9 6.6c-.7.3-.7 1.3.1 1.5l5 1.5 1.5 5c.2.8 1.2.8 1.5.1l5.2-12.7c.2-.5-.2-1-.6-.6Z" />
+      </svg>
       {t.navDirections}
     </a>
   );

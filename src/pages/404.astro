@@ -1,10 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { withBase } from '../lib/base';
+// Inlined at build time rather than via the React <Logo>: this page ships no
+// island on purpose, and the symbol is markup, not behaviour.
+import symbol from '../assets/sda-symbol.svg?raw';
 
-// No React island here on purpose: an error page shouldn't pull down the app
-// bundle just to render an apology. That also means no language toggle, so both
-// languages are shown at once rather than picking one.
+// No React island here: an error page shouldn't pull down the app bundle just
+// to render an apology. That also means no language toggle, so both languages
+// are shown at once rather than picking one.
 ---
 
 <Layout
@@ -13,6 +16,11 @@ import { withBase } from '../lib/base';
 >
   <main id="main" class="grid min-h-screen place-items-center px-7 py-16 text-center">
     <div>
+      <span
+        class="mx-auto mb-7 block h-14 w-14 text-navy"
+        aria-hidden="true"
+        set:html={symbol}
+      />
       <div class="mb-4 font-serif text-[64px] leading-none text-navy">404</div>
       <h1 class="mb-3 font-serif text-[28px] font-medium text-ink">
         Bladsy nie gevind
