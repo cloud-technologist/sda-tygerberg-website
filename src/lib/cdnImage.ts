@@ -27,6 +27,15 @@ import { withBase } from './base';
  *
  * Unique transformations are billed per source image per option set, so this
  * string is shared: adding a second variant of it doubles the count.
+ *
+ * `quality=82` is where AVIF stops being cheap. Measured on the live deploy at
+ * width=640: 21 kB at q75, 24 kB at q82, 27 kB at q85, then 46 kB at q90 and
+ * 102 kB at q95 — so q90 is roughly double the bytes for every visitor, on a
+ * card 348 CSS px wide. Raise it to 85 if more headroom is ever wanted; past
+ * that the curve is not worth it here.
+ *
+ * The fallback copies are built at a higher quality (90) for the opposite
+ * reason — see tools/build-headshots.mjs.
  */
 export const IMAGE_TRANSFORM_OPTIONS = 'format=auto,quality=82,fit=scale-down';
 

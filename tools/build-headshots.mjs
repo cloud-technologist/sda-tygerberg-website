@@ -37,7 +37,26 @@ const OUT_DIR = path.join(SRC_DIR, 'fallback');
 
 /** Headroom over the 1280 top of HEADSHOT_WIDTHS. */
 const MASTER_WIDTH = 1400;
-const QUALITY = 82;
+
+/**
+ * Higher than the 82 the edge transform uses, on purpose — the two numbers are
+ * paying for different things.
+ *
+ * A transform is per request, so every point of quality there is bandwidth for
+ * every visitor, and AVIF gets expensive fast: measured on the live deploy,
+ * width=640 goes 24 kB at q82 -> 27 kB at q85 -> 46 kB at q90. These files are
+ * fetched once into the repo and only ever served when the transformer is
+ * missing, so the same step costs 2.2 MB -> 3.3 MB of repo, once, and nothing
+ * per visitor.
+ *
+ * Measured against a lossless render of the same resize, mean over four
+ * headshots: q82 SSIM 0.9733, q85 0.9761, q90 0.9812, q95 0.9876 — with size
+ * climbing much faster than SSIM past 90. 90 is where that curve flattens.
+ *
+ * It matters most on a 3x phone, where a 1400px fallback is displayed at ~435
+ * CSS px and so lands near 1:1 rather than being downscaled into invisibility.
+ */
+const QUALITY = 90;
 
 const kb = (bytes) => `${(bytes / 1024).toFixed(0)} kB`;
 

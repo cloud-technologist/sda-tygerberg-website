@@ -9,8 +9,9 @@ import type { Lang } from './site';
  * repeating the same face through the carousel. `roles` is therefore a list.
  *
  * Names only, by design. No phone numbers or email addresses — those were
- * stripped site-wide for POPIA (see README "Known open items") and the
- * /connect form is the compliant way to reach a person now.
+ * stripped site-wide for POPIA, and the /connect form (behind an explicit
+ * consent checkbox) is the compliant way to reach a person. Do not reintroduce
+ * direct contact details here.
  *
  * `id` (not `name`) keys the carousel — it stays stable if a name is corrected.
  */
