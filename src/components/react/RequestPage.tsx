@@ -40,10 +40,21 @@ function RequestContent({ topic }: { topic: RequestTopic }) {
         <ul className="mb-9 grid gap-3">
           {copy.expectations.map((line) => (
             <li key={line} className="flex items-start gap-3 text-[15px] leading-relaxed text-slate">
-              <span
+              {/* A tick, not the old teardrop: this list is what the visitor
+                  can expect to happen, so a checkmark says what the shape
+                  means. The teardrop was a leftover of the placeholder logo. */}
+              <svg
                 aria-hidden="true"
-                className="mt-[7px] h-2 w-2 flex-none rotate-45 rounded-[0_50%_50%_50%] border-[1.5px] border-orange"
-              />
+                viewBox="0 0 16 16"
+                className="mt-[5px] h-3.5 w-3.5 flex-none text-orange"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.25"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 8.5 6.2 12 13 4.5" />
+              </svg>
               {line}
             </li>
           ))}

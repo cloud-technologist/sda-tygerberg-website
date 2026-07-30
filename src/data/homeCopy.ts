@@ -71,7 +71,6 @@ export type HomeCopy = {
   addressCopied: string;
   directionsCta: string;
   appleMapsCta: string;
-  mapTapHint: string;
   footerBlurb: string;
   footerVisit: string;
   footerTimesLabel: string;
@@ -151,7 +150,6 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     addressCopied: 'Gekopieer!',
     directionsCta: 'Kry Aanwysings',
     appleMapsCta: 'Maak oop in Apple Maps',
-    mapTapHint: 'Tik om met die kaart te wisselwerk',
     footerBlurb: '’n Gemeente wat hoop, genesing en die liefde van Jesus met die Tygerberg-omgewing deel.',
     footerVisit: 'Besoek ons',
     footerTimesLabel: 'Dienstye',
@@ -228,7 +226,6 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     addressCopied: 'Copied!',
     directionsCta: 'Get Directions',
     appleMapsCta: 'Open in Apple Maps',
-    mapTapHint: 'Tap to interact with map',
     footerBlurb: 'A congregation sharing hope, healing and the love of Jesus with the Tygerberg community.',
     footerVisit: 'Visit us',
     footerTimesLabel: 'Service times',
