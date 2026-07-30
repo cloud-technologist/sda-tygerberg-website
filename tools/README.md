@@ -3,6 +3,28 @@
 Authoring helpers. Nothing here runs during `npm run build` or on deploy — these
 are one-off scripts whose *output* is committed.
 
+## build-headshots.mjs
+
+Builds the fallback copies of the department-head headshots:
+
+```sh
+node tools/build-headshots.mjs
+```
+
+`public/images/hod/TG-DH-*.jpg` (~20 MP, 7-10 MB) →
+`public/images/hod/fallback/TG-DH-*.jpg` (1400px wide, ~200 kB, EXIF stripped).
+It resizes nothing else — the originals stay exactly as delivered, because they
+are what Cloudflare transforms per viewport. The fallbacks exist only for when
+there is no transformer to do that; see "Department head photos" in the root
+README for when that happens and how the site decides.
+
+Run it whenever a headshot is added or replaced, and commit the output.
+
+Unlike `og-image.html` below, this needs no extra install: `sharp` comes in
+with Astro's own dependencies, so `npm ci` is enough. If that ever stops being
+true, `npm i sharp` in a scratch directory outside the repo and run it from
+there.
+
 ## og-image.html
 
 Source for `public/og-image.png` (1200×630, the social card) and

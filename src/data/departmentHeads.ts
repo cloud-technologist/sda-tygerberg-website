@@ -9,8 +9,9 @@ import type { Lang } from './site';
  * repeating the same face through the carousel. `roles` is therefore a list.
  *
  * Names only, by design. No phone numbers or email addresses — those were
- * stripped site-wide for POPIA (see README "Known open items") and the
- * /connect form is the compliant way to reach a person now.
+ * stripped site-wide for POPIA, and the /connect form (behind an explicit
+ * consent checkbox) is the compliant way to reach a person. Do not reintroduce
+ * direct contact details here.
  *
  * `id` (not `name`) keys the carousel — it stays stable if a name is corrected.
  */
@@ -20,25 +21,26 @@ export type DepartmentHead = {
   /** Singular job titles — each card is one person, not a department listing. */
   roles: Record<Lang, string[]>;
   /**
-   * Root-relative path to the studio original under `public/images/hod/`.
+   * Just the filename of the headshot, e.g. `TG-DH-Jaco.jpg`.
    *
-   * Not a finished image URL: the carousel resizes it per viewport through
-   * Cloudflare (`src/lib/cdnImage.ts`), so this must stay a plain path that
-   * both the transformer and the no-transform fallback can resolve. These are
-   * multi-megabyte files — nothing but the transformer should ever link one.
+   * Not a URL, and deliberately not a path: there are two copies of every
+   * photo — the full-size original Cloudflare transforms, and the pre-resized
+   * fallback served when it can't — and `src/lib/cdnImage.ts` builds both from
+   * this one name so they cannot drift apart.
    *
-   * Photos are named for the person, so the file for someone whose card is
+   * Photos are named for the person, so the files for someone whose card is
    * removed should go with it: `public/` is a public URL whether or not
    * anything links to it.
    */
-  photoUrl?: string;
+  photo?: string;
 };
 
 /**
- * Ten of the twenty have headshots (the board's studio session); the rest keep
- * the striped placeholder until photos arrive. Adding one is two steps: drop
- * the original into `public/images/hod/`, then set `photoUrl` here. No
- * resizing, and no component change.
+ * Eleven of the twenty-one have headshots (the board's studio session); the
+ * rest keep the striped placeholder until photos arrive. Adding one is three
+ * steps: drop the original into `public/images/hod/`, run
+ * `node tools/build-headshots.mjs` for its fallback copy, then set `photo`
+ * here. No component change.
  */
 export const departmentHeads: DepartmentHead[] = [
   {
@@ -53,7 +55,20 @@ export const departmentHeads: DepartmentHead[] = [
       af: ['Ouderling', 'Persoonlike Bediening', 'Strategiesebeplannings-komitee'],
       en: ['Elder', 'Personal Ministries', 'Strategic Planning Committee'],
     },
-    photoUrl: '/images/hod/TG-DH-Jaco.jpg',
+    photo: 'TG-DH-Jaco.jpg',
+  },
+  {
+    id: 'persoonlike-bediening',
+    name: 'Laura Rolff',
+    // Sits next to Jaco on purpose. He holds "Persoonlike Bediening" as an
+    // elder, she chairs the committee under it, and the roster the rest of this
+    // list came from records only his half — so the adjacency is what says
+    // these are one thread of work rather than a duplicated title.
+    roles: {
+      af: ['Persoonlike Bedieningkomitee', 'Evangelisasie'],
+      en: ['Personal Ministries Committee', 'Evangelism'],
+    },
+    photo: 'TG-DH-Laura.jpg',
   },
   {
     id: 'diakens',
@@ -64,22 +79,22 @@ export const departmentHeads: DepartmentHead[] = [
       af: ['Hoofdiaken', 'Veiligheidsoffisier'],
       en: ['Head Deacon', 'Safety Officer'],
     },
-    // "Graig" is the studio's spelling of the filename, kept verbatim so the
-    // web master is a straight derivation of the original. The roster spells
-    // him Craig, and that is what the card shows.
-    photoUrl: '/images/hod/TG-DH-Graig.jpg',
+    // "Graig" is the studio's spelling of the filename, kept verbatim so both
+    // copies stay straight derivations of what the photographer delivered. The
+    // roster spells him Craig, and that is what the card shows.
+    photo: 'TG-DH-Graig.jpg',
   },
   {
     id: 'diakonesse',
     name: 'Marinda Wallace',
     roles: { af: ['Hoofdiakones'], en: ['Head Deaconess'] },
-    photoUrl: '/images/hod/TG-DH-Marinda.jpg',
+    photo: 'TG-DH-Marinda.jpg',
   },
   {
     id: 'sabbatskool',
     name: 'Gustav Allmann',
     roles: { af: ['Sabbatskool'], en: ['Sabbath School'] },
-    photoUrl: '/images/hod/TG-DH-Gustav.jpg',
+    photo: 'TG-DH-Gustav.jpg',
   },
   {
     id: 'kinderbediening',
@@ -88,13 +103,13 @@ export const departmentHeads: DepartmentHead[] = [
       af: ['Kinderbediening', 'Gemeenskapsdienste & Welsyn'],
       en: ['Children’s Ministry', 'Community Services & Welfare'],
     },
-    photoUrl: '/images/hod/TG-DH-Lenie.jpg',
+    photo: 'TG-DH-Lenie.jpg',
   },
   {
     id: 'senior-jeug',
     name: 'Monique Spammer',
     roles: { af: ['Senior Jeugleier'], en: ['Senior Youth Leader'] },
-    photoUrl: '/images/hod/TG-DH-Monique.jpg',
+    photo: 'TG-DH-Monique.jpg',
   },
   {
     id: 'junior-jeug',
@@ -110,7 +125,7 @@ export const departmentHeads: DepartmentHead[] = [
     id: 'musiek',
     name: 'Leonie Cloete',
     roles: { af: ['Musiek'], en: ['Music'] },
-    photoUrl: '/images/hod/TG-DH-Leonie.jpg',
+    photo: 'TG-DH-Leonie.jpg',
   },
   {
     id: 'tesourier',
@@ -147,13 +162,13 @@ export const departmentHeads: DepartmentHead[] = [
     id: 'vrouebediening',
     name: 'Linda Jennings',
     roles: { af: ['Vrouebediening'], en: ['Women’s Ministry'] },
-    photoUrl: '/images/hod/TG-DH-Linda.jpg',
+    photo: 'TG-DH-Linda.jpg',
   },
   {
     id: 'mannebediening',
     name: 'Marius Louw',
     roles: { af: ['Mannebediening'], en: ['Men’s Ministry'] },
-    photoUrl: '/images/hod/TG-DH-Marius.jpg',
+    photo: 'TG-DH-Marius.jpg',
   },
   {
     id: 'boukomitee',
@@ -164,7 +179,7 @@ export const departmentHeads: DepartmentHead[] = [
     id: 'ontspanningskomitee',
     name: 'Hanlie Tolmay',
     roles: { af: ['Ontspanningskomitee'], en: ['Recreation Committee'] },
-    photoUrl: '/images/hod/TG-DH-Hanlie.jpg',
+    photo: 'TG-DH-Hanlie.jpg',
   },
   {
     id: 'gesinsbediening',
@@ -172,15 +187,3 @@ export const departmentHeads: DepartmentHead[] = [
     roles: { af: ['Gesinsbediening'], en: ['Family Ministry'] },
   },
 ];
-
-/*
- * One studio photo has no card: `src/images/TG-DH-Laura.jpg`. There is no
- * Laura on the Ampsdraers 2025/2026 roster the list above is built from, and
- * the other ten filenames match a roster first name exactly, so this one is
- * not a spelling variant of anybody here. It is the only headshot still under
- * `src/`, where nothing is served — the rest live in `public/images/hod/` —
- * because a face should not go up until it is clear whose it is.
- *
- * To publish it once the board confirms: move it to `public/images/hod/` and
- * set `photoUrl` on the right card.
- */

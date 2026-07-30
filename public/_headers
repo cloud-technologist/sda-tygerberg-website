@@ -13,5 +13,15 @@
 # A week, not a year: these filenames are stable and carry no content hash, so
 # replacing someone's photo reuses its URL. A purge makes that immediate; this
 # bounds how long a stale copy can linger for anyone who missed the purge.
+#
+# Verified on the live deploy: the source now answers `max-age=604800` and the
+# transformed variants inherit it, with the `too restrictive` warning gone.
 /images/hod/*
+  Cache-Control: public, max-age=604800
+
+# The pre-resized fallback copies, which browsers do fetch directly whenever
+# there is no transformer. Spelled out rather than left to the rule above:
+# whether `*` spans a `/` is not something worth being wrong about, and if it
+# does, this rule simply agrees with it.
+/images/hod/fallback/*
   Cache-Control: public, max-age=604800

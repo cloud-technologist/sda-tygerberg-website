@@ -3,12 +3,16 @@ import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
 import { departmentHeads, type DepartmentHead } from '../../data/departmentHeads';
 import type { Lang } from '../../data/site';
-import { withBase } from '../../lib/base';
 import {
   cdnImageUrl,
   cdnSrcset,
+  headshotFallbackUrl,
+  headshotSource,
   HEADSHOT_SIZES,
+  HEADSHOT_WIDTHS,
   IMAGE_CDN_ENABLED,
+  probeImageCdn,
+  type ImageCdnStatus,
 } from '../../lib/cdnImage';
 
 const AUTOPLAY_MS = 4200;
@@ -71,16 +75,74 @@ const CARD_WIDTH = 'w-[72%] sm:w-[45%] lg:w-[31%]';
 const PHOTO_ASPECT = '4/5';
 
 /**
- * Cloudflare resizes the master per viewport at the edge; the browser picks
+ * The URL the probe asks about: the smallest candidate of the first photo on
+ * the roster. Already in that card's `srcset`, so confirming the transformer
+ * is alive generates nothing Cloudflare would not have generated anyway.
+ */
+const PROBE_URL = (() => {
+  const withPhoto = departmentHeads.find((head) => head.photo);
+  return withPhoto ? cdnImageUrl(headshotSource(withPhoto.photo!), HEADSHOT_WIDTHS[0]) : null;
+})();
+
+/**
+ * Whether the edge transformer is answering, asked once and shared by every
+ * card.
+ *
+ * Without this each card discovers the answer by failing, which costs a 404
+ * per photo and leaves the visitor watching them arrive one at a time. Asking
+ * up front means a single verdict, so every card that has not started loading
+ * yet — most of the deck, since only three are ever on screen — goes straight
+ * to the copy that works.
+ *
+ * `unknown` — the initial value on both the server and the client — is
+ * deliberately optimistic. It renders transform URLs, which is both what the
+ * common case wants and what the server-rendered HTML already contains, so
+ * hydration matches and the eager images are in flight before the probe
+ * returns.
+ */
+function useImageCdn(): ImageCdnStatus {
+  const [status, setStatus] = useState<ImageCdnStatus>(
+    IMAGE_CDN_ENABLED ? 'unknown' : 'unavailable',
+  );
+
+  useEffect(() => {
+    if (!IMAGE_CDN_ENABLED || !PROBE_URL) return;
+    let live = true;
+    probeImageCdn(PROBE_URL).then((ok) => {
+      if (live) setStatus(ok ? 'available' : 'unavailable');
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  return status;
+}
+
+/**
+ * Cloudflare resizes the original per viewport at the edge; the browser picks
  * the candidate from `sizes`. See src/lib/cdnImage.ts.
  */
-function Headshot({ name, photoUrl, eager }: { name: string; photoUrl: string; eager: boolean }) {
-  // Both the devtest build (no Cloudflare, so no /cdn-cgi/image) and a
-  // transform that fails outright land on the master itself. Held in state
-  // rather than poked onto the DOM node so a re-render — a language switch,
-  // the next autoplay tick — cannot put the broken URL back.
+function Headshot({
+  name,
+  photo,
+  eager,
+  cdn,
+}: {
+  name: string;
+  photo: string;
+  eager: boolean;
+  cdn: ImageCdnStatus;
+}) {
+  // This photo's transform failed even though others may be fine. Held in
+  // state rather than poked onto the DOM node so a re-render — a language
+  // switch, the next autoplay tick — cannot put the broken URL back.
   const [transformFailed, setTransformFailed] = useState(false);
-  const useCdn = IMAGE_CDN_ENABLED && !transformFailed;
+
+  // Never the original: that is an ~8 MB studio file, and the only thing it is
+  // for is being the transformer's source.
+  const useCdn = cdn !== 'unavailable' && !transformFailed;
+  const fallback = headshotFallbackUrl(photo);
 
   /**
    * `onError` alone is not enough. These cards are server-rendered, so the
@@ -96,8 +158,8 @@ function Headshot({ name, photoUrl, eager }: { name: string; photoUrl: string; e
   return (
     <img
       ref={catchErrorBeforeHydration}
-      src={useCdn ? cdnImageUrl(photoUrl, 640) : withBase(photoUrl)}
-      srcSet={useCdn ? cdnSrcset(photoUrl) : undefined}
+      src={useCdn ? cdnImageUrl(headshotSource(photo), 640) : fallback}
+      srcSet={useCdn ? cdnSrcset(headshotSource(photo)) : undefined}
       sizes={useCdn ? HEADSHOT_SIZES : undefined}
       alt={name}
       // Only the first few cards are ever on screen at load; the rest are
@@ -124,11 +186,13 @@ function Headshot({ name, photoUrl, eager }: { name: string; photoUrl: string; e
 function Card({
   head,
   lang,
+  cdn = 'unknown',
   eager = false,
   sizer = false,
 }: {
   head: DepartmentHead;
   lang: Lang;
+  cdn?: ImageCdnStatus;
   eager?: boolean;
   sizer?: boolean;
 }) {
@@ -142,8 +206,8 @@ function Card({
             'repeating-linear-gradient(45deg, var(--color-tan) 0 10px, var(--color-tan-border) 10px 20px)',
         }}
       >
-        {sizer ? null : head.photoUrl ? (
-          <Headshot name={head.name} photoUrl={head.photoUrl} eager={eager} />
+        {sizer ? null : head.photo ? (
+          <Headshot name={head.name} photo={head.photo} eager={eager} cdn={cdn} />
         ) : lang === 'af' ? (
           'HOD foto'
         ) : (
@@ -167,6 +231,9 @@ function Card({
 export function AboutCarousel() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
+
+  // One probe for the whole deck, not one per card.
+  const cdn = useImageCdn();
 
   const [active, setActive] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -389,7 +456,7 @@ export function AboutCarousel() {
                   {/* Slots 0-2 are the three that can be on screen at the
                       widest breakpoint, and `active` starts at 0 — so these
                       are exactly the photos above the fold. */}
-                  <Card head={head} lang={lang} eager={index < 3} />
+                  <Card head={head} lang={lang} cdn={cdn} eager={index < 3} />
                 </div>
               );
             })}
