@@ -56,6 +56,10 @@ jobs:
           # to keep the preview out of search results and stop it competing
           # with production. Unset elsewhere, so production indexes normally.
           PUBLIC_INDEXABLE: 'false'
+          # No Cloudflare in front of Pages, so /cdn-cgi/image/* is a plain
+          # 404 here. Serve the headshot masters directly rather than have
+          # every card 404 and fall back one at a time.
+          PUBLIC_IMAGE_CDN: 'false'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
