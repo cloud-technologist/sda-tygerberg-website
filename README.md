@@ -48,7 +48,7 @@ from the workflow and an empty value gets uploaded.
 
 | Var | Default | Meaning |
 |---|---|---|
-| `LIVE_CHECK_CRON` | `* 6-11 * * 6` | When the LIVE badge may spend quota, read as a *window*. Saturdays 06:00–11:59. **Keep the minute field `*`** ([C-14](./CONCERNS.md#c-14--live_check_cron-is-a-window-not-a-schedule)). |
+| `LIVE_CHECK_CRON` | `* 9-12 * * 6` | When the LIVE badge may spend quota, read as a *window*. Saturdays 09:00–12:59, covering the 09:00–12:30 stream. **Keep the minute field `*`** ([C-14](./CONCERNS.md#c-14--live_check_cron-is-a-window-not-a-schedule)). |
 | `LIVE_CHECK_TZ` | `Africa/Johannesburg` | Timezone the window is evaluated in |
 
 **Build-time env vars** — set by the workflows; unset means "on":
