@@ -13,8 +13,12 @@ export type LiveStatusEnv = {
   LIVE_CHECK_TZ?: string;
 };
 
-/** Saturdays (cron day-of-week 6), 06:00-11:59 — window closes at 12:00. */
-const DEFAULT_CRON = '* 6-11 * * 6';
+/**
+ * Saturdays (cron day-of-week 6), 09:00-12:59. The church streams 09:00-12:30;
+ * the hour field cannot express :30, and running long only permits polling —
+ * C-14.
+ */
+const DEFAULT_CRON = '* 9-12 * * 6';
 const DEFAULT_TZ = 'Africa/Johannesburg';
 
 export type LiveStatusSource =

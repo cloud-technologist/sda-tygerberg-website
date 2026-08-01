@@ -173,8 +173,8 @@ otherwise a screen reader narrates a new name every 4.2 seconds, unasked.
 
 ### C-14 — `LIVE_CHECK_CRON` is a window, not a schedule
 
-It is read as a predicate on the current time, so `* 6-11 * * 6` means "any
-minute from 06:00 to 11:59 on Saturdays".
+It is read as a predicate on the current time, so `* 9-12 * * 6` means "any
+minute from 09:00 to 12:59 on Saturdays".
 
 **Keep the minute field `*`.** It decides whether the window is open, not how
 often YouTube is polled. `*/5 9-11 * * 6` would close the window for four
@@ -184,8 +184,18 @@ minutes out of every five and make the badge blink. Poll rate is
 Day-of-week `6` is Saturday — cron counts from `0` = Sunday, so `7` would select
 Sunday.
 
-The window closes at 12:00 while the Divine Service starts at 11:00, so a
-service running past noon loses the badge. Widen the hour field if that matters.
+**The window is deliberately wider than the stream.** The church streams
+09:00-12:30, but minute and hour are matched independently, so no single
+expression means "until 12:30" — `0-30 9-12` would mean the first half of
+*every* hour. The choice is 09:00-11:59 or 09:00-12:59.
+
+09:00-12:59 is correct because the window only *permits* polling. The badge
+still appears solely when YouTube reports a live stream, so the extra 29 minutes
+cost a few API calls and show nothing. Erring the other way would drop the badge
+during the last half hour of a service, which is a visible failure.
+
+If the service times move, widen or move the hour field; do not try to encode
+the half hour in the minute field.
 
 ### C-15 — A malformed window fails closed
 

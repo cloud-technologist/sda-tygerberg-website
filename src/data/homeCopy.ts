@@ -94,7 +94,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     ctaVisit: 'Besoek ons gemeente',
     ctaWatch: 'Kyk Lewendig',
     liveLabel: 'LEWENDIG',
-    tabReplay: 'Onlangse Diens',
+    tabReplay: 'Onlangse Dienste',
     timesLabel: 'Sabbatdienste',
     week: [
       { day: 'Dinsdag', name: 'Biduur', time: '19:00 – 20:00' },
@@ -191,7 +191,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     ctaVisit: 'Visit our church',
     ctaWatch: 'Watch Live',
     liveLabel: 'LIVE',
-    tabReplay: 'Latest Service',
+    tabReplay: 'Recent Services',
     timesLabel: 'Sabbath Services',
     week: [
       { day: 'Tuesday', name: 'Prayer Meeting', time: '19:00 – 20:00' },
