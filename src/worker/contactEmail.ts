@@ -23,10 +23,18 @@ export type ContactEmailEnv = {
   CONTACT_EMAIL_TO?: string;
   /**
    * The From address, on a domain onboarded to Cloudflare Email Service. Also a
-   * secret: it is a spoofing target and it keeps all three delivery settings in
-   * one place instead of split across committed config.
+   * secret: it is a spoofing target and it keeps the delivery settings in one
+   * place instead of split across committed config.
    */
   CONTACT_EMAIL_FROM?: string;
+  /**
+   * Optional blind copy — an archive or monitoring inbox. Unset means no BCC.
+   *
+   * Must *also* be a verified destination address: the free path verifies every
+   * recipient, so an unverified BCC fails the whole send rather than quietly
+   * dropping the copy (C-31).
+   */
+  CONTACT_EMAIL_BCC?: string;
 };
 
 /**
@@ -86,7 +94,7 @@ export async function sendContactEmail(
   fields: Record<string, string>,
   submittedAt: string,
 ): Promise<boolean> {
-  const { EMAIL, CONTACT_EMAIL_TO, CONTACT_EMAIL_FROM } = env;
+  const { EMAIL, CONTACT_EMAIL_TO, CONTACT_EMAIL_FROM, CONTACT_EMAIL_BCC } = env;
   if (!EMAIL || !CONTACT_EMAIL_TO || !CONTACT_EMAIL_FROM) return false;
 
   const label = TOPIC_LABELS[fields.topic as ContactTopic] ?? 'Navraag';
@@ -95,6 +103,9 @@ export async function sendContactEmail(
     await EMAIL.send({
       to: CONTACT_EMAIL_TO,
       from: CONTACT_EMAIL_FROM,
+      // Omitted entirely when unset — an empty string would be a malformed
+      // recipient rather than "no recipient".
+      ...(CONTACT_EMAIL_BCC ? { bcc: CONTACT_EMAIL_BCC } : {}),
       subject: `Webwerf — ${label}: ${headerSafe(fields.name, 60)}`,
       // Set only when the visitor gave an address, so replying either reaches
       // them or is visibly impossible — never silently mailing the From alias.

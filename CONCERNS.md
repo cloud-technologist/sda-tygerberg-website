@@ -298,11 +298,22 @@ whichever channel broke.
 
 Three things bound the email path, and none of them are obvious from the code:
 
-- **It only sends to a verified destination address on the account.** Sends to
+- **It only sends to verified destination addresses on the account.** Sends to
   those are free on every plan and do not touch the sending quota. Sending to an
   arbitrary visitor address is a different product tier, so do not repurpose this
   binding to send confirmations back to the person who filled in the form — it
   will fail with `E_SENDER_NOT_VERIFIED` or eat quota, depending on setup.
+
+  Note the plural. `CONTACT_EMAIL_BCC` adds a second recipient, and *every*
+  recipient is checked, so an unverified BCC fails the whole send rather than
+  dropping just the blind copy. Adding an archive address can therefore stop the
+  church receiving enquiries at all. Put one real submission through the form
+  after setting it — `via` in the response tells you which channel survived.
+
+  A "destination address" is also not the same thing as a custom address on your
+  own routed domain. `something@yourdomain` that Email Routing forwards onward is
+  a *custom address*; the destination is the external inbox behind it. On the free
+  path the binding wants the latter.
 - **The address lives in `CONTACT_EMAIL_TO`, a Worker secret**, for the same
   reason `CONTACT_WEBHOOK_URL` is one: this repository is public, and an address
   committed to it is a scraped address.

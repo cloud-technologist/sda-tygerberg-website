@@ -45,6 +45,7 @@ secrets, not Actions or build-time variables ([C-18](./CONCERNS.md#c-18--the-api
 | `YOUTUBE_CHANNEL_ID` | `UCtZlioPBBORWMMMSJ9BE1Wg` | as above |
 | `CONTACT_EMAIL_TO` | Where `/api/contact` emails; must be a **verified destination address** on the account | email channel skipped |
 | `CONTACT_EMAIL_FROM` | From address, on a domain onboarded to Cloudflare Email Service | as above |
+| `CONTACT_EMAIL_BCC` | Optional blind copy — archive/monitoring inbox; must also be verified | no blind copy |
 | `CONTACT_WEBHOOK_URL` | Fallback channel; any JSON POST endpoint | webhook channel skipped |
 
 The two YouTube values may be stored as repo secrets instead — the production

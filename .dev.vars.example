@@ -19,6 +19,11 @@ YOUTUBE_CHANNEL_ID=UCtZlioPBBORWMMMSJ9BE1Wg
 CONTACT_EMAIL_TO=
 CONTACT_EMAIL_FROM=
 
+# Optional blind copy — an archive or monitoring inbox. Leave unset for none.
+# If you do set it in production, verify that address too: every recipient is
+# checked, so an unverified BCC fails the whole send, not just the copy.
+CONTACT_EMAIL_BCC=
+
 # The fallback channel, used only when email is unconfigured or fails. Also a
 # Worker secret in production. Point it at any local server that returns 200 to
 # watch what the church's inbox would receive; leave every channel unset and the

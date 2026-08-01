@@ -354,12 +354,20 @@ the domain must use Cloudflare DNS.
 ```sh
 npx wrangler secret put CONTACT_EMAIL_TO     # the verified address from 6.1
 npx wrangler secret put CONTACT_EMAIL_FROM   # e.g. webwerf@yourdomain
+npx wrangler secret put CONTACT_EMAIL_BCC    # optional archive copy
 ```
 
 They are secrets rather than entries in `wrangler.jsonc` because this repository
 is public and a committed address is a scraped address — CONCERNS.md C-31. The
 `send_email` binding itself is already declared in `wrangler.jsonc`; you do not
 need to add it.
+
+`CONTACT_EMAIL_BCC` is optional; leave it unset and no blind copy is sent.
+
+> **If you do set it, verify that address too (§6.1).** Every recipient is
+> checked, so an unverified BCC fails the *whole* send — the church stops
+> receiving enquiries, not just the archive. Add it, then put one real
+> submission through the form before considering it done.
 
 A submission arrives as plain text, subject `Webwerf — Verbind: <name>` (or
 `Bybelstudie`), with **Reply-To set to the visitor's address** when they gave
