@@ -123,14 +123,22 @@ function GivingContent() {
                     </div>
                     {/* The QR is for a *second* device's camera — a phone
                         cannot scan the screen it is displayed on — so it sits
-                        below the button rather than replacing it. */}
+                        below the button rather than replacing it.
+
+                        Fills the card rather than sitting at a fixed 200px in
+                        the corner of it: a code that is physically bigger on
+                        screen is a code another phone can scan from further
+                        away and at a worse angle. Capped so it stays square
+                        with the card's padding, and centred for the same
+                        reason the card is not all left-rag. The source is
+                        960px, so even the 320px cap is 3x on a retina screen. */}
                     <img
                       src={withBase(`/images/${ZAPPER.qr}`)}
                       alt={t.zapperQrAlt}
-                      width={200}
-                      height={200}
+                      width={320}
+                      height={320}
                       loading="lazy"
-                      className="h-auto w-[200px] max-w-full rounded-card bg-white p-2.5"
+                      className="mx-auto h-auto w-full max-w-[320px] rounded-card bg-white p-3"
                     />
                   </div>
                 )}
