@@ -181,10 +181,34 @@ All copy and structured content is under `src/data/`, away from components:
 | `departmentHeads.ts` | Carousel roster — 21 people, 11 with headshots |
 | `requestCopy.ts` | `/connect` and `/bible-studies` copy, incl. POPIA wording |
 | `resources.ts` | External resource links (logos in `public/logos/`) |
-| `giving.ts` | EFT banking details |
+| `giving.ts` | `/giving` page copy, EFT banking details, Zapper link |
 
 No phone numbers or email addresses anywhere in content —
 [C-20](./CONCERNS.md#c-20--popia-shapes-what-the-form-asks-and-what-it-stores).
+
+Adding a page? `src/pages/sitemap.xml.ts` lists routes by hand — nothing
+enumerates `src/pages/` for you.
+
+### Publishing Zapper
+
+`/giving` shows the EFT details always and the Zapper option only once `ZAPPER`
+in `src/data/giving.ts` has a `url`. Empty means the section, and the mention of
+Zapper in the page description, are both absent — the page is honest in either
+state.
+
+1. `url` — what the church's QR encodes. Read it off the code with a phone
+   camera, or copy the payment link from the Zapper merchant portal. **Never
+   guess it**: a wrong link sends people's giving to a stranger's merchant
+   account and nothing on the page would look wrong.
+2. `qr` — optional. Put the PNG in `public/images/` and name it here, filename
+   only. With a `url` and no `qr` the page still shows a working pay button.
+
+The button is a plain `<a href>` on purpose. Zapper publishes an
+`apple-app-site-association` and an `assetlinks.json` for `zapper.com`, so the
+link opens the app when it is installed and the web page when it is not — on
+iOS and Android, with no JavaScript and no user-agent sniffing. A `2.zap.pe/…`
+link is a different domain, not covered by those manifests, and should be
+checked before being trusted to deep link.
 
 The homepage video always embeds the channel's auto-generated uploads playlist,
 newest-first, no API key. Which video plays never depends on `YOUTUBE_API_KEY`.
