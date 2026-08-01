@@ -21,6 +21,13 @@ const ogImage = new URL(image, site);
 // Only the devtest build sets this. Everything else indexes normally.
 const indexable = import.meta.env.PUBLIC_INDEXABLE !== 'false';
 
+// Stamped by the production workflow so a served page can say which release it
+// came from — `curl -s <url> | grep app-version` answers "what is live?" without
+// the Cloudflare dashboard. A local or preview build sets neither and emits
+// nothing, so absence means "not a tagged production build", which is the truth.
+const appVersion = import.meta.env.PUBLIC_APP_VERSION;
+const appCommit = import.meta.env.PUBLIC_APP_COMMIT;
+
 const jsonLd = churchJsonLd(site);
 ---
 
@@ -33,6 +40,8 @@ const jsonLd = churchJsonLd(site);
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical.href} />
     {!indexable && <meta name="robots" content="noindex,nofollow" />}
+    {appVersion && <meta name="app-version" content={appVersion} />}
+    {appCommit && <meta name="app-commit" content={appCommit} />}
 
     <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
     <!-- iOS ignores SVG favicons; without this a bookmark gets a screenshot. -->

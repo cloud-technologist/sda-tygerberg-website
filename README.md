@@ -103,6 +103,38 @@ attaches itself on deploy via `routes` in `wrangler.jsonc`.
 The Pages preview has no Worker and no image transformer — see
 [C-22](./CONCERNS.md#c-22--the-devtest-build-has-no-worker-and-no-transformer).
 
+## Versioning and releases
+
+`version` in `package.json` is the single source of truth. A production deploy
+reads it and, **if that version has no release yet**, tags the deployed commit
+`vX.Y.Z` and cuts a GitHub Release with generated notes.
+
+So cutting a release is one line in the `dev` → `main` promotion PR:
+
+```jsonc
+"version": "0.2.0"
+```
+
+Leave it alone and production still deploys — it just doesn't tag. That is the
+intended behaviour for a re-deploy or a `workflow_dispatch` re-run: a tag claims
+"this is what production serves", and two deploys of one version would make that
+claim twice about different commits.
+
+Tagging happens **after** Cloudflare accepts the deploy, never before, so a
+failed deploy leaves no tag behind.
+
+**What's live?** Three ways, in increasing order of trust:
+
+```sh
+curl -s https://tygerberg-sda.cloudkid.link | grep -o '<meta name="app-[^>]*>'
+```
+
+The production build stamps `app-version` and `app-commit` into every page's
+`<head>`. Local and preview builds set neither and emit nothing, so their absence
+correctly means "not a tagged production build". The repo's **Environments** tab
+also records each deploy with a link to the site, and the **Releases** page lists
+every tagged version.
+
 ## Diagnostics
 
 `curl https://tygerberg-sda.cloudkid.link/api/live-status` returns the resolved
