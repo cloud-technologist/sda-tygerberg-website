@@ -39,9 +39,12 @@ function GivingContent() {
   const { lang } = useLanguage();
   const t = givingCopy[lang];
 
-  // No link means Zapper is not published yet: render nothing rather than a
-  // button that goes nowhere. See the note in data/giving.ts.
-  const hasZapper = Boolean(ZAPPER.url);
+  // Either half is enough to be useful, and they are independent: today the
+  // church has a scannable code but no linkable payment URL. See data/giving.ts
+  // for why the button is absent rather than pointed at the QR's own payload.
+  const hasQr = Boolean(ZAPPER.qr);
+  const hasLink = Boolean(ZAPPER.url);
+  const hasZapper = hasQr || hasLink;
 
   return (
     <div className="min-h-screen font-sans text-ink">
@@ -99,19 +102,25 @@ function GivingContent() {
                 <p className="mb-4 text-[14.5px] leading-relaxed text-slate">{t.zapperDesc}</p>
 
                 {/* A plain link, deliberately. Zapper publishes the iOS and
-                    Android deep-link manifests for zapper.com, so this opens
-                    the app when installed and the web page when not — no
-                    JavaScript, no custom scheme, no user-agent sniffing. */}
-                <a
-                  href={ZAPPER.url}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-pill bg-orange px-5 py-2.5 text-[13.5px] font-bold text-white transition-colors hover:bg-orange-hover"
-                >
-                  {t.zapperCta} →
-                </a>
+                    Android deep-link manifests for zapper.com, so a zapper.com
+                    link opens the app when installed and the web page when not
+                    — no JavaScript, no custom scheme, no user-agent sniffing.
+                    Absent today: the church's code is on the older 2.zap.pe
+                    domain, which those manifests do not cover. */}
+                {hasLink && (
+                  <a
+                    href={ZAPPER.url}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-pill bg-orange px-5 py-2.5 text-[13.5px] font-bold text-white transition-colors hover:bg-orange-hover"
+                  >
+                    {t.zapperCta} →
+                  </a>
+                )}
 
-                {ZAPPER.qr && (
-                  <div className="mt-5">
-                    <div className="mb-2.5 text-[13px] text-slate-muted">{t.zapperScan}</div>
+                {hasQr && (
+                  <div className={hasLink ? 'mt-5' : ''}>
+                    <div className="mb-2.5 text-[13px] text-slate-muted">
+                      {hasLink ? t.zapperScan : t.zapperScanOnly}
+                    </div>
                     {/* The QR is for a *second* device's camera — a phone
                         cannot scan the screen it is displayed on — so it sits
                         below the button rather than replacing it. */}

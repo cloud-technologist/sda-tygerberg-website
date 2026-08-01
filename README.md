@@ -189,26 +189,40 @@ No phone numbers or email addresses anywhere in content —
 Adding a page? `src/pages/sitemap.xml.ts` lists routes by hand — nothing
 enumerates `src/pages/` for you.
 
-### Publishing Zapper
+### Zapper on `/giving`
 
-`/giving` shows the EFT details always and the Zapper option only once `ZAPPER`
-in `src/data/giving.ts` has a `url`. Empty means the section, and the mention of
-Zapper in the page description, are both absent — the page is honest in either
-state.
+`ZAPPER` in `src/data/giving.ts` has two independent halves, and the section
+renders whichever exist. Empty both and the card disappears, along with the
+mention of Zapper in the page description.
 
-1. `url` — what the church's QR encodes. Read it off the code with a phone
-   camera, or copy the payment link from the Zapper merchant portal. **Never
-   guess it**: a wrong link sends people's giving to a stranger's merchant
-   account and nothing on the page would look wrong.
-2. `qr` — optional. Put the PNG in `public/images/` and name it here, filename
-   only. With a `url` and no `qr` the page still shows a working pay button.
+| Field | Today | Meaning |
+|---|---|---|
+| `qr` | `zapper-qr.png` | Filename in `public/images/`. Shows a scannable code. |
+| `url` | *empty* | A tap-to-pay link. Shows a button. |
 
-The button is a plain `<a href>` on purpose. Zapper publishes an
-`apple-app-site-association` and an `assetlinks.json` for `zapper.com`, so the
-link opens the app when it is installed and the web page when it is not — on
-iOS and Android, with no JavaScript and no user-agent sniffing. A `2.zap.pe/…`
-link is a different domain, not covered by those manifests, and should be
-checked before being trusted to deep link.
+**The QR ships; the button does not, deliberately.** The church's code decodes
+to `http://2.zap.pe?t=6&i=…`, which is not usable as a link from this site:
+it is plain `http` where the site is `https` — a downgrade no payment link
+should make — and `2.zap.pe` is not `zapper.com`, so the
+`apple-app-site-association` and `assetlinks.json` that let a Zapper link open
+the app do not cover it. A code that scans beats a button that might not work.
+
+To add the button, get a current `https://zapper.com/…` payment link from the
+merchant portal and set `url`. **Never guess it**: a wrong link sends people's
+giving to a stranger's merchant account and nothing on the page would look
+wrong.
+
+Replacing the code: export it from the church's Zapper account, then
+
+```sh
+node --input-type=module -e "import sharp from 'sharp';
+  await sharp('NEW.jpeg').resize(600,600,{kernel:'nearest'})
+    .png({compressionLevel:9,palette:true}).toFile('public/images/zapper-qr.png')"
+```
+
+PNG rather than JPEG because a QR is two-tone: it compresses better and carries
+none of the ringing around the modules that makes a code harder to scan. Decode
+the result before committing it and check the payload still names the church.
 
 The homepage video always embeds the channel's auto-generated uploads playlist,
 newest-first, no API key. Which video plays never depends on `YOUTUBE_API_KEY`.

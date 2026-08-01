@@ -11,28 +11,38 @@ export const BANKING_DETAILS = {
 /**
  * Zapper, the second giving option.
  *
- * `url` is what the church's Zapper QR encodes — the merchant's own payment
- * link. **Do not guess it.** A wrong value sends people's tithes to a stranger,
- * and unlike a typo in copy nobody would notice until the money was gone. Read
- * it off the QR with a phone camera, or copy it from the Zapper merchant portal.
+ * `qr` is a file in `public/images/`, filename only — the church's own code,
+ * which scans to a payload naming "SDA Tygerberg Gemeente" with the reference
+ * "Offergawe Tygerberg". Regenerate it from the church's Zapper account, never
+ * by hand.
  *
- * `qr` is a file in `public/images/`, filename only. Optional: with a `url` and
- * no `qr` the page still shows a working pay button, just no code to scan.
+ * `url` is a tap-to-pay link and is **deliberately empty**. The church's QR
+ * encodes `http://2.zap.pe?t=6&i=...`, which cannot be used as a link here:
  *
- * The whole section hides itself while `url` is empty, so leaving it blank
- * unpublishes Zapper rather than shipping a dead button — same approach as the
- * first-visit answers in homeCopy.ts.
+ *   - It is plain `http`, and the site is served over `https`. Linking out to
+ *     an insecure scheme for a *payment* is a downgrade no giving page should
+ *     make.
+ *   - `2.zap.pe` is not `zapper.com`, so the deep-link manifests that make a
+ *     Zapper link open the app — the apple-app-site-association and
+ *     assetlinks.json published for `zapper.com` — do not cover it. A tap would
+ *     have no reason to reach the app.
+ *   - The payload carries `|` and `[`, which a browser percent-encodes on
+ *     navigation. Whether Zapper still parses it after that is unknown.
  *
- * Deep linking is why `url` matters more than the image. Zapper publishes both
- * an apple-app-site-association and an assetlinks.json for `zapper.com`, so a
- * plain link opens the app when it is installed, on iOS and Android alike, and
- * falls back to the web page when it is not. A `2.zap.pe/...` link — the older
- * QR format — is a different domain and is not covered by those manifests;
- * check before assuming it deep links.
+ * A code that scans is worth more than a button that might not work, so the
+ * page ships the QR alone. To add the button, get a current `https://zapper.com`
+ * payment link from the merchant portal and put it here — the section renders
+ * it automatically. **Do not guess that link.** A wrong one sends people's
+ * giving to a stranger's merchant account, and nothing on the page would look
+ * wrong.
+ *
+ * The section hides itself when both are empty, so clearing them unpublishes
+ * Zapper rather than shipping a broken card — same approach as the first-visit
+ * answers in homeCopy.ts.
  */
 export const ZAPPER: { url: string; qr: string } = {
   url: '',
-  qr: '',
+  qr: 'zapper-qr.png',
 };
 
 export type GivingCopy = {
@@ -53,7 +63,10 @@ export type GivingCopy = {
   zapperTitle: string;
   zapperDesc: string;
   zapperCta: string;
+  /** Used when a pay button is also shown. */
   zapperScan: string;
+  /** Used when the QR is the only way to pay. */
+  zapperScanOnly: string;
   zapperQrAlt: string;
   /** Closing note */
   thanks: string;
@@ -79,9 +92,10 @@ export const givingCopy: Record<Lang, GivingCopy> = {
     copyLabel: 'Kopieer rekeningnommer',
     copiedLabel: 'Gekopieer',
     zapperTitle: 'Zapper',
-    zapperDesc: 'Betaal met die Zapper-app. Op ’n foon open die knoppie die app as dit reeds geïnstalleer is.',
+    zapperDesc: 'Betaal jou tiende of offergawe met die Zapper-app.',
     zapperCta: 'Gee via Zapper',
-    zapperScan: 'Of skandeer met die Zapper-app:',
+    zapperScan: 'Of skandeer hierdie kode:',
+    zapperScanOnly: 'Skandeer hierdie kode met die Zapper-app:',
     zapperQrAlt: 'Zapper QR-kode vir Tygerberg SDA Kerk',
     thanks: 'Baie dankie vir jou getroue ondersteuning.',
     pageTitle: 'Gee · Tygerberg SDA Kerk',
@@ -103,9 +117,10 @@ export const givingCopy: Record<Lang, GivingCopy> = {
     copyLabel: 'Copy account number',
     copiedLabel: 'Copied',
     zapperTitle: 'Zapper',
-    zapperDesc: 'Pay with the Zapper app. On a phone the button opens the app if you already have it installed.',
+    zapperDesc: 'Pay your tithe or offering with the Zapper app.',
     zapperCta: 'Give via Zapper',
-    zapperScan: 'Or scan with the Zapper app:',
+    zapperScan: 'Or scan this code:',
+    zapperScanOnly: 'Scan this code with the Zapper app:',
     zapperQrAlt: 'Zapper QR code for Tygerberg SDA Church',
     thanks: 'Thank you for your faithful support.',
     pageTitle: 'Give · Tygerberg SDA Church',

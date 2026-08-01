@@ -9,7 +9,8 @@ const copy = givingCopy.af;
 
 // Only advertise Zapper once the page actually offers it. Naming a payment
 // method the page does not show would be indexed and wrong.
-const description = ZAPPER.url ? copy.pageDescription + copy.pageDescriptionZapper : copy.pageDescription;
+const offersZapper = Boolean(ZAPPER.url || ZAPPER.qr);
+const description = offersZapper ? copy.pageDescription + copy.pageDescriptionZapper : copy.pageDescription;
 ---
 
 <Layout title={copy.pageTitle} description={description}>
