@@ -14,17 +14,14 @@ export type ContactEmailEnv = {
    * account — sends to those are free on every plan and skip the sending quota
    * entirely (C-31).
    *
-   * A Worker secret, not a var, for the same reason CONTACT_WEBHOOK_URL is one:
-   * this repository is public, and a delivery address committed to it is a
-   * scraped address. That is also why the binding carries no
-   * `allowed_destination_addresses` — the fence would have to name the address
-   * in committed config.
+   * Currently a committed var rather than a Worker secret, which is a temporary
+   * decision recorded in docs/adr/0001-hardcode-contact-addresses.md. This code
+   * does not care which it is; do not add anything here that assumes either.
    */
   CONTACT_EMAIL_TO?: string;
   /**
-   * The From address, on a domain onboarded to Cloudflare Email Service. Also a
-   * secret: it is a spoofing target and it keeps the delivery settings in one
-   * place instead of split across committed config.
+   * The From address, on a domain onboarded to Cloudflare Email Service, and
+   * within the binding's `allowed_sender_addresses`.
    */
   CONTACT_EMAIL_FROM?: string;
   /**

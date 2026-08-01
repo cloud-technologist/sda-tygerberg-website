@@ -261,8 +261,6 @@ Set them in the Cloudflare dashboard — **Workers & Pages →
 ```sh
 npx wrangler secret put YOUTUBE_API_KEY
 npx wrangler secret put YOUTUBE_CHANNEL_ID
-npx wrangler secret put CONTACT_EMAIL_TO
-npx wrangler secret put CONTACT_EMAIL_FROM
 npx wrangler secret put CONTACT_WEBHOOK_URL
 ```
 
@@ -270,12 +268,14 @@ npx wrangler secret put CONTACT_WEBHOOK_URL
 |---|---|---|
 | `YOUTUBE_API_KEY` | LIVE badge | A Google Cloud API key with YouTube Data API v3 enabled (step 5) |
 | `YOUTUBE_CHANNEL_ID` | LIVE badge | `UCtZlioPBBORWMMMSJ9BE1Wg` |
-| `CONTACT_EMAIL_TO` | Contact form | The church inbox, as a verified destination address (step 6) |
-| `CONTACT_EMAIL_FROM` | Contact form | e.g. `webwerf@yourdomain` on the onboarded sending domain (step 6) |
-| `CONTACT_WEBHOOK_URL` | Contact form (fallback) | Where submissions go if email is unset or fails (step 6.4) |
+| `CONTACT_WEBHOOK_URL` | Contact form (fallback only) | Where submissions go if email fails (step 6.4) |
 
-The contact form needs **either** the two email secrets **or** the webhook — not
-both. Set neither and it reports `not-configured`.
+The contact form's **email** addresses are not secrets — they are committed in
+`wrangler.jsonc` and arrive with the deploy. That is a temporary decision; see
+[ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md) and step 6.3.
+
+The form needs **either** the email addresses **or** the webhook — not both.
+Neither means it reports `not-configured`.
 
 Secrets take effect on the next deploy. After changing one, re-run the
 production workflow from the Actions tab (`workflow_dispatch`) or run
@@ -351,23 +351,34 @@ the domain must use Cloudflare DNS.
 
 ### 6.3 Set the two secrets
 
-```sh
-npx wrangler secret put CONTACT_EMAIL_TO     # the verified address from 6.1
-npx wrangler secret put CONTACT_EMAIL_FROM   # e.g. webwerf@yourdomain
-npx wrangler secret put CONTACT_EMAIL_BCC    # optional archive copy
+**There is nothing to set.** The three addresses are committed in
+`wrangler.jsonc`, so a deploy carries them:
+
+```jsonc
+"CONTACT_EMAIL_TO":   "notifications@cloudkid.link",
+"CONTACT_EMAIL_FROM": "mailer@cloudkid.link",
+"CONTACT_EMAIL_BCC":  "hello@cloudkid.link"
 ```
 
-They are secrets rather than entries in `wrangler.jsonc` because this repository
-is public and a committed address is a scraped address — CONCERNS.md C-31. The
-`send_email` binding itself is already declared in `wrangler.jsonc`; you do not
-need to add it.
+This is a deliberate, temporary reversal of the "delivery addresses are secrets"
+rule — read [ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md) before
+changing it. The `send_email` binding is declared there too, fenced to exactly
+these addresses.
 
-`CONTACT_EMAIL_BCC` is optional; leave it unset and no blind copy is sent.
+To use different addresses, edit **two** places in `wrangler.jsonc` — the `vars`
+block and the binding's `allowed_destination_addresses` /
+`allowed_sender_addresses` — then redeploy. Out of step, Cloudflare rejects the
+send.
 
-> **If you do set it, verify that address too (§6.1).** Every recipient is
-> checked, so an unverified BCC fails the *whole* send — the church stops
-> receiving enquiries, not just the archive. Add it, then put one real
-> submission through the form before considering it done.
+What you *do* still have to do is §6.1 and §6.2 for these specific addresses:
+verify `notifications@` and `hello@` as destination addresses, and onboard the
+domain that `mailer@` sends from.
+
+> **The BCC is not free of consequence.** Every recipient is checked, so an
+> unverified `hello@cloudkid.link` fails the *whole* send — the church stops
+> receiving enquiries, not just the archive. Put one real submission through the
+> form and confirm the response says `"via":"email"` before considering this
+> done.
 
 A submission arrives as plain text, subject `Webwerf — Verbind: <name>` (or
 `Bybelstudie`), with **Reply-To set to the visitor's address** when they gave

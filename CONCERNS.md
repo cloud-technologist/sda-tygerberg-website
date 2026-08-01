@@ -314,18 +314,25 @@ Three things bound the email path, and none of them are obvious from the code:
   own routed domain. `something@yourdomain` that Email Routing forwards onward is
   a *custom address*; the destination is the external inbox behind it. On the free
   path the binding wants the latter.
-- **The address lives in `CONTACT_EMAIL_TO`, a Worker secret**, for the same
-  reason `CONTACT_WEBHOOK_URL` is one: this repository is public, and an address
-  committed to it is a scraped address.
-- **Therefore the binding carries no `allowed_destination_addresses`.** That
-  fence would have to name the address in committed config, which is the thing
-  being avoided. What actually bounds the binding is Cloudflare refusing
-  unverified destinations. If the church later accepts publishing the address,
-  adding the fence is a one-line change and strictly better.
+- **The three addresses are committed to `wrangler.jsonc`, not Worker secrets.**
+  This reverses the original decision and is deliberate, temporary, and written
+  up in [ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md) — read that
+  before changing it, and revert it when any of its three triggers fires. The
+  short version: they are role addresses on the operator's own domain rather
+  than personal or church-member data, so publishing them costs spam to three
+  controlled mailboxes, and it buys a self-contained deploy plus the fence below.
+- **The binding is fenced by `allowed_destination_addresses` and
+  `allowed_sender_addresses`.** This was impossible while the addresses were
+  secret — naming them in the fence would have published them, which was the
+  thing being avoided. Public addresses make it free, and it bounds the blast
+  radius: a bug in `contactEmail.ts` cannot mail a stranger, it fails.
 
-A missing binding or a missing secret is not an error: `sendContactEmail` returns
-false and delivery moves on. That is what keeps `wrangler dev` working, where the
-binding exists but the secrets usually do not.
+  The fence duplicates the addresses inside `wrangler.jsonc`. Change one list and
+  not the other and Cloudflare rejects the send.
+
+A missing binding or a missing value is not an error: `sendContactEmail` returns
+false and delivery moves on. That is what keeps a partial configuration working
+rather than throwing.
 
 ---
 

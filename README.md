@@ -43,10 +43,12 @@ secrets, not Actions or build-time variables ([C-18](./CONCERNS.md#c-18--the-api
 |---|---|---|
 | `YOUTUBE_API_KEY` | Google Cloud key, YouTube Data API v3 enabled | LIVE badge stays hidden |
 | `YOUTUBE_CHANNEL_ID` | `UCtZlioPBBORWMMMSJ9BE1Wg` | as above |
-| `CONTACT_EMAIL_TO` | Where `/api/contact` emails; must be a **verified destination address** on the account | email channel skipped |
-| `CONTACT_EMAIL_FROM` | From address, on a domain onboarded to Cloudflare Email Service | as above |
-| `CONTACT_EMAIL_BCC` | Optional blind copy — archive/monitoring inbox; must also be verified | no blind copy |
 | `CONTACT_WEBHOOK_URL` | Fallback channel; any JSON POST endpoint | webhook channel skipped |
+
+The three contact **email** addresses are not secrets — they are committed vars,
+a temporary decision recorded in
+[ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md). See the vars table
+below.
 
 The two YouTube values may be stored as repo secrets instead — the production
 workflow uploads them — but remove one from repo settings without removing it
@@ -63,6 +65,14 @@ them in the dashboard, or with `wrangler secret put`.
 |---|---|---|
 | `LIVE_CHECK_CRON` | `* 9-12 * * 6` | When the LIVE badge may spend quota, read as a *window*. Saturdays 09:00–12:59, covering the 09:00–12:30 stream. **Keep the minute field `*`** ([C-14](./CONCERNS.md#c-14--live_check_cron-is-a-window-not-a-schedule)). |
 | `LIVE_CHECK_TZ` | `Africa/Johannesburg` | Timezone the window is evaluated in |
+| `CONTACT_EMAIL_TO` | `notifications@cloudkid.link` | Where `/api/contact` emails. Must be a **verified destination address** on the account |
+| `CONTACT_EMAIL_FROM` | `mailer@cloudkid.link` | From address, on a domain onboarded to Cloudflare Email Service |
+| `CONTACT_EMAIL_BCC` | `hello@cloudkid.link` | Optional blind copy. Must **also** be verified — an unverified one fails the whole send |
+
+Changing any of the three means changing it in **two** places in
+`wrangler.jsonc`: the `vars` block and the `send_email` binding's
+`allowed_destination_addresses` / `allowed_sender_addresses`. Out of step, the
+send is rejected ([C-31](./CONCERNS.md#c-31--email-is-tried-first-and-the-webhook-is-the-fallback)).
 
 **Build-time env vars** — set by the workflows; unset means "on":
 

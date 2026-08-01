@@ -31,16 +31,44 @@
     // badge vanish for the four minutes between each mark. Poll rate lives on
     // the client, in useLiveStatus.ts (every 5 minutes).
     "LIVE_CHECK_CRON": "* 9-12 * * 6",
-    "LIVE_CHECK_TZ": "Africa/Johannesburg"
+    "LIVE_CHECK_TZ": "Africa/Johannesburg",
+
+    // Contact-form delivery. These were Worker secrets; they are vars now by
+    // decision — see C-31. They are role addresses on the operator's own
+    // domain, not personal or church-member data, and the cost of publishing
+    // them is spam to three mailboxes rather than exposure of anyone's
+    // information. The From appears in every message header regardless.
+    //
+    // Setting a Worker *secret* of the same name is the way back: remove the
+    // line here and `wrangler secret put` it, and no code changes.
+    //
+    // CONTACT_EMAIL_TO must be a verified destination address on the account,
+    // and so must CONTACT_EMAIL_BCC — every recipient is checked, so an
+    // unverified one fails the whole send. Change either and update
+    // `allowed_destination_addresses` below to match, or the binding rejects it.
+    "CONTACT_EMAIL_TO": "notifications@cloudkid.link",
+    "CONTACT_EMAIL_FROM": "mailer@cloudkid.link",
+    "CONTACT_EMAIL_BCC": "hello@cloudkid.link"
   },
-  // Lets /api/contact email the church directly. The address it sends to is a
-  // Worker secret (CONTACT_EMAIL_TO), so no `destination_address` or
-  // `allowed_destination_addresses` is set here — this repository is public and
-  // either one would publish the church's inbox to be scraped. The trade-off is
-  // that the binding is unfenced in config; what actually bounds it is
-  // Cloudflare only accepting verified destination addresses for a free send.
-  // See C-31.
-  "send_email": [{ "name": "EMAIL" }],
+  // Lets /api/contact email the church directly.
+  //
+  // Fenced to exactly the addresses above. This became possible only once they
+  // stopped being secrets (ADR-0001): while the destination was secret, naming
+  // it here would have published it, so the binding had to stay unrestricted.
+  // Now that it is public anyway, the fence costs nothing and bounds what a bug
+  // in the Worker could do — a mistake in `contactEmail.ts` cannot mail a
+  // stranger, it fails instead.
+  //
+  // Keep these in step with the `CONTACT_EMAIL_*` vars above. They are a
+  // separate list, so changing an address in one place and not the other is a
+  // send that Cloudflare rejects. See C-31.
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_destination_addresses": ["notifications@cloudkid.link", "hello@cloudkid.link"],
+      "allowed_sender_addresses": ["mailer@cloudkid.link"]
+    }
+  ],
   "routes": [
     // Production custom domain (zone already lives in the Cloudflare
     // account) — `wrangler deploy` provisions/attaches this automatically.
