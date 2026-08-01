@@ -355,10 +355,15 @@ the domain must use Cloudflare DNS.
 `wrangler.jsonc`, so a deploy carries them:
 
 ```jsonc
-"CONTACT_EMAIL_TO":   "notifications@cloudkid.link",
+"CONTACT_EMAIL_TO":   "hello@cloudkid.link",
 "CONTACT_EMAIL_FROM": "mailer@cloudkid.link",
-"CONTACT_EMAIL_BCC":  "hello@cloudkid.link"
+"CONTACT_EMAIL_BCC":  "notifications@cloudkid.link"
 ```
+
+**`TO` has to be an address a person reads.** In Email Routing, `hello@`
+forwards to an inbox while `notifications@` is handled by a Worker, so the
+enquiry goes to `hello@` and `notifications@` takes the archive copy. Reversing
+that delivers every enquiry to a script.
 
 This is a deliberate, temporary reversal of the "delivery addresses are secrets"
 rule — read [ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md) before
@@ -375,10 +380,10 @@ verify `notifications@` and `hello@` as destination addresses, and onboard the
 domain that `mailer@` sends from.
 
 > **The BCC is not free of consequence.** Every recipient is checked, so an
-> unverified `hello@cloudkid.link` fails the *whole* send — the church stops
-> receiving enquiries, not just the archive. Put one real submission through the
-> form and confirm the response says `"via":"email"` before considering this
-> done.
+> unverified `notifications@cloudkid.link` fails the *whole* send — the church
+> stops receiving enquiries, not just losing the archive copy. Put one real
+> submission through the form and confirm the response says `"via":"email"`
+> before considering this done.
 
 A submission arrives as plain text, subject `Webwerf — Verbind: <name>` (or
 `Bybelstudie`), with **Reply-To set to the visitor's address** when they gave

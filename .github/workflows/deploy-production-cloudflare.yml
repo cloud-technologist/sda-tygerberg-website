@@ -25,7 +25,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # `contents: write` so a successful deploy can create the release tag.
+  # `deployments: write` for the `environment:` block below, which is what
+  # populates the repo's Environments tab.
+  contents: write
+  deployments: write
 
 concurrency:
   group: production-deploy
@@ -34,9 +38,19 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # Records each run in the Environments tab with a link to the live site, so
+    # "what is deployed right now" is answerable from GitHub. Costs nothing and
+    # needs no third-party action.
+    environment:
+      name: production
+      url: https://tygerberg-sda.cloudkid.link
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history: `gh release create --generate-notes` needs the previous
+          # tag to diff against, and a shallow clone has neither tags nor commits.
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -59,8 +73,34 @@ jobs:
         # network round-trips whose output nothing here reads.
         run: npm ci --prefer-offline --no-audit --fund=false
 
+      # `package.json` is the single source of truth for the released version.
+      # A deploy whose version already has a tag is a re-deploy, not a release —
+      # it still ships, it just does not tag or release again. So the way to cut
+      # a release is to bump the version in the promotion PR; forget to, and
+      # production still updates, quietly and without a new tag.
+      - name: Resolve version
+        id: version
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$version is already released — deploying without tagging."
+          else
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::v$version is new — a release will be cut after a successful deploy."
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Build (root base path)
         run: npm run build
+        env:
+          # Stamped into the build so a served page can say which release it came
+          # from. Read via import.meta.env in src/layouts/Layout.astro, which
+          # emits them as <meta> tags. See README "Versioning and releases".
+          PUBLIC_APP_VERSION: ${{ steps.version.outputs.version }}
+          PUBLIC_APP_COMMIT: ${{ github.sha }}
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
@@ -85,3 +125,19 @@ jobs:
           # `npm run build` above and cannot reach the client bundle.
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+
+      # Only after Cloudflare has accepted the deploy. Tagging first would leave
+      # a tag claiming to be live when the deploy failed, which is worse than no
+      # tag at all — the tag is the record of what production is actually
+      # serving, and it has to stay true to that.
+      - name: Tag and release
+        if: steps.version.outputs.fresh == 'true'
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          gh release create "v$version" \
+            --target "$GITHUB_SHA" \
+            --title "v$version" \
+            --generate-notes
+          echo "::notice::Released v$version -> https://tygerberg-sda.cloudkid.link"
+        env:
+          GH_TOKEN: ${{ github.token }}

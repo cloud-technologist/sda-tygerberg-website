@@ -46,9 +46,16 @@
     // and so must CONTACT_EMAIL_BCC — every recipient is checked, so an
     // unverified one fails the whole send. Change either and update
     // `allowed_destination_addresses` below to match, or the binding rejects it.
-    "CONTACT_EMAIL_TO": "notifications@cloudkid.link",
+    //
+    // Which address is TO and which is BCC is not arbitrary. In Email Routing,
+    // hello@ forwards to a person's inbox, while notifications@ is handled by a
+    // Worker. The enquiry has to reach a human, so hello@ is the recipient and
+    // notifications@ takes the archive copy. Swapping them back would deliver
+    // every enquiry to a script and leave the blind copy as the only thing
+    // anyone actually reads.
+    "CONTACT_EMAIL_TO": "hello@cloudkid.link",
     "CONTACT_EMAIL_FROM": "mailer@cloudkid.link",
-    "CONTACT_EMAIL_BCC": "hello@cloudkid.link"
+    "CONTACT_EMAIL_BCC": "notifications@cloudkid.link"
   },
   // Lets /api/contact email the church directly.
   //

@@ -65,9 +65,9 @@ them in the dashboard, or with `wrangler secret put`.
 |---|---|---|
 | `LIVE_CHECK_CRON` | `* 9-12 * * 6` | When the LIVE badge may spend quota, read as a *window*. Saturdays 09:00–12:59, covering the 09:00–12:30 stream. **Keep the minute field `*`** ([C-14](./CONCERNS.md#c-14--live_check_cron-is-a-window-not-a-schedule)). |
 | `LIVE_CHECK_TZ` | `Africa/Johannesburg` | Timezone the window is evaluated in |
-| `CONTACT_EMAIL_TO` | `notifications@cloudkid.link` | Where `/api/contact` emails. Must be a **verified destination address** on the account |
+| `CONTACT_EMAIL_TO` | `hello@cloudkid.link` | Where `/api/contact` emails. Must be a **verified destination address**, and must reach a person — Email Routing forwards this one to an inbox |
 | `CONTACT_EMAIL_FROM` | `mailer@cloudkid.link` | From address, on a domain onboarded to Cloudflare Email Service |
-| `CONTACT_EMAIL_BCC` | `hello@cloudkid.link` | Optional blind copy. Must **also** be verified — an unverified one fails the whole send |
+| `CONTACT_EMAIL_BCC` | `notifications@cloudkid.link` | Archive copy, handled by a Worker. Must **also** be verified — an unverified one fails the whole send |
 
 Changing any of the three means changing it in **two** places in
 `wrangler.jsonc`: the `vars` block and the `send_email` binding's
@@ -102,6 +102,38 @@ attaches itself on deploy via `routes` in `wrangler.jsonc`.
 
 The Pages preview has no Worker and no image transformer — see
 [C-22](./CONCERNS.md#c-22--the-devtest-build-has-no-worker-and-no-transformer).
+
+## Versioning and releases
+
+`version` in `package.json` is the single source of truth. A production deploy
+reads it and, **if that version has no release yet**, tags the deployed commit
+`vX.Y.Z` and cuts a GitHub Release with generated notes.
+
+So cutting a release is one line in the `dev` → `main` promotion PR:
+
+```jsonc
+"version": "0.2.0"
+```
+
+Leave it alone and production still deploys — it just doesn't tag. That is the
+intended behaviour for a re-deploy or a `workflow_dispatch` re-run: a tag claims
+"this is what production serves", and two deploys of one version would make that
+claim twice about different commits.
+
+Tagging happens **after** Cloudflare accepts the deploy, never before, so a
+failed deploy leaves no tag behind.
+
+**What's live?** Three ways, in increasing order of trust:
+
+```sh
+curl -s https://tygerberg-sda.cloudkid.link | grep -o '<meta name="app-[^>]*>'
+```
+
+The production build stamps `app-version` and `app-commit` into every page's
+`<head>`. Local and preview builds set neither and emit nothing, so their absence
+correctly means "not a tagged production build". The repo's **Environments** tab
+also records each deploy with a link to the site, and the **Releases** page lists
+every tagged version.
 
 ## Diagnostics
 
@@ -149,10 +181,48 @@ All copy and structured content is under `src/data/`, away from components:
 | `departmentHeads.ts` | Carousel roster — 21 people, 11 with headshots |
 | `requestCopy.ts` | `/connect` and `/bible-studies` copy, incl. POPIA wording |
 | `resources.ts` | External resource links (logos in `public/logos/`) |
-| `giving.ts` | EFT banking details |
+| `giving.ts` | `/giving` page copy, EFT banking details, Zapper link |
 
 No phone numbers or email addresses anywhere in content —
 [C-20](./CONCERNS.md#c-20--popia-shapes-what-the-form-asks-and-what-it-stores).
+
+Adding a page? `src/pages/sitemap.xml.ts` lists routes by hand — nothing
+enumerates `src/pages/` for you.
+
+### Zapper on `/giving`
+
+`ZAPPER` in `src/data/giving.ts` has two independent halves, and the section
+renders whichever exist. Empty both and the card disappears, along with the
+mention of Zapper in the page description.
+
+| Field | Today | Meaning |
+|---|---|---|
+| `qr` | `zapper-qr.png` | Filename in `public/images/`. Shows a scannable code. |
+| `url` | *empty* | A tap-to-pay link. Shows a button. |
+
+**The QR ships; the button does not, deliberately.** The church's code decodes
+to `http://2.zap.pe?t=6&i=…`, which is not usable as a link from this site:
+it is plain `http` where the site is `https` — a downgrade no payment link
+should make — and `2.zap.pe` is not `zapper.com`, so the
+`apple-app-site-association` and `assetlinks.json` that let a Zapper link open
+the app do not cover it. A code that scans beats a button that might not work.
+
+To add the button, get a current `https://zapper.com/…` payment link from the
+merchant portal and set `url`. **Never guess it**: a wrong link sends people's
+giving to a stranger's merchant account and nothing on the page would look
+wrong.
+
+Replacing the code: export it from the church's Zapper account, then
+
+```sh
+node --input-type=module -e "import sharp from 'sharp';
+  await sharp('NEW.jpeg').resize(600,600,{kernel:'nearest'})
+    .png({compressionLevel:9,palette:true}).toFile('public/images/zapper-qr.png')"
+```
+
+PNG rather than JPEG because a QR is two-tone: it compresses better and carries
+none of the ringing around the modules that makes a code harder to scan. Decode
+the result before committing it and check the payload still names the church.
 
 The homepage video always embeds the channel's auto-generated uploads playlist,
 newest-first, no API key. Which video plays never depends on `YOUTUBE_API_KEY`.
