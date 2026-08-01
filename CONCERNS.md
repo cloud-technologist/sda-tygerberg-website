@@ -13,25 +13,25 @@ file covers the traps.
 
 ## Licensing
 
-### C-01 — The map carries no tile attribution
+### C-01 — The tile credit is adjacent to the map, not on it
 
-`public/map.html` sets `attributionControl: false`, and nothing renders an
-OpenStreetMap credit anywhere on the page.
+`public/map.html` sets `attributionControl: false`, so nothing is drawn over the
+tiles. The OpenStreetMap credit is rendered instead by `VisitMap.tsx`, directly
+below the map frame and linking to the OSM copyright page.
 
-**This is a known breach**, decided by the repo owner. OSM tiles come under the
-ODbL and the [OSMF tile usage policy](https://operations.osmfoundation.org/policies/tiles/),
-both of which require a visible credit.
+**This is deliberate and it satisfies the licence.** The ODbL and the
+[OSMF tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
+require a visible credit; the OSMF guidelines accept one placed *adjacent to*
+the map rather than on it. Adjacent placement keeps the tile surface clean,
+which is why the control is off.
 
-The practical risk is not litigation, it is the OSMF blocking tile requests for
-the domain — at which point the map goes blank with nothing in the code to
-explain why. That is a human enforcement action, not an automatic one, so it may
-never happen; if the map ever does go blank for no other reason, look here
-first.
+**Do not remove the credit line to tidy the layout.** Without it the site is in
+breach, and the practical risk is not litigation but the OSMF blocking tile
+requests for the domain — at which point the map goes blank. If the map ever
+does go blank for no other reason, check whether the credit is still rendering.
 
-Two ways out if that becomes a problem: restore the credit (Leaflet's own
-"Leaflet" prefix is a courtesy and never needed — it is BSD-2-Clause — and the
-OSMF guidelines allow the credit *adjacent to* the map rather than on it), or
-move to a tile provider whose terms do not require visible attribution.
+Leaflet's own "Leaflet" prefix is a courtesy and is not restored: the library is
+BSD-2-Clause and requires no visible credit.
 
 ---
 

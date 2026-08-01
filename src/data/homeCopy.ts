@@ -72,6 +72,8 @@ export type HomeCopy = {
   addressCopied: string;
   directionsCta: string;
   appleMapsCta: string;
+  /** Tile credit, rendered beside the map rather than on it — CONCERNS.md C-01. */
+  mapCredit: string;
   footerBlurb: string;
   footerVisit: string;
   footerTimesLabel: string;
@@ -172,6 +174,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     addressCopied: 'Gekopieer!',
     directionsCta: 'Kry Aanwysings',
     appleMapsCta: 'Maak oop in Apple Maps',
+    mapCredit: 'Kaartdata © OpenStreetMap-bydraers',
     footerBlurb: '’n Gemeente wat hoop, genesing en die liefde van Jesus met die Tygerberg-omgewing deel.',
     footerVisit: 'Besoek ons',
     footerTimesLabel: 'Dienstye',
@@ -269,6 +272,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     addressCopied: 'Copied!',
     directionsCta: 'Get Directions',
     appleMapsCta: 'Open in Apple Maps',
+    mapCredit: 'Map data © OpenStreetMap contributors',
     footerBlurb: 'A congregation sharing hope, healing and the love of Jesus with the Tygerberg community.',
     footerVisit: 'Visit us',
     footerTimesLabel: 'Service times',

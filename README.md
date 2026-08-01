@@ -176,5 +176,6 @@ Needs the church board:
 Needs someone with access: **submit `/sitemap.xml`**, and set the Worker secrets
 above.
 
-Carrying known risk: **the map ships no tile attribution** —
-[C-01](./CONCERNS.md#c-01--the-map-carries-no-tile-attribution).
+The OpenStreetMap tile credit renders below the map, not on it — the placement
+the OSMF guidelines allow. **Do not remove it to tidy the layout:**
+[C-01](./CONCERNS.md#c-01--the-tile-credit-is-adjacent-to-the-map-not-on-it).

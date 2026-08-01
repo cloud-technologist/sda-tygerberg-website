@@ -75,14 +75,28 @@ export function VisitMap() {
           </a>
         </div>
 
-        {/* Map carries no tile attribution, by decision — CONCERNS.md C-01. */}
-        <div className="relative min-h-[300px] overflow-hidden rounded-card-lg">
-          <iframe
-            src={withBase('/map.html')}
-            title="Tygerberg SDA Kerk — kaart"
-            loading="lazy"
-            className="absolute inset-0 h-full w-full border-0"
-          />
+        {/* The tile credit sits beside the map, not on it: the OSMF guidelines
+            accept a credit adjacent to the map, which satisfies the ODbL while
+            leaving the tile surface clean — CONCERNS.md C-01. */}
+        <div className="flex min-h-[300px] flex-col">
+          <div className="relative flex-1 overflow-hidden rounded-card-lg">
+            <iframe
+              src={withBase('/map.html')}
+              title="Tygerberg SDA Kerk — kaart"
+              loading="lazy"
+              className="absolute inset-0 h-full w-full border-0"
+            />
+          </div>
+          <p className="mt-2 text-right text-[11px] leading-none text-slate-muted">
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noopener"
+              className="hover:text-navy hover:underline"
+            >
+              {t.mapCredit}
+            </a>
+          </p>
         </div>
       </div>
     </section>
