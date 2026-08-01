@@ -28,6 +28,11 @@ npx tsc --noEmit     # typecheck
 locally, copy `.dev.vars.example` to `.dev.vars` (gitignored), add a YouTube key,
 and widen `LIVE_CHECK_CRON` to `* * * * *` so you needn't wait for Saturday.
 
+The contact form's email channel needs no Cloudflare account locally: `wrangler
+dev` simulates the `send_email` binding, printing From/To/Subject and writing the
+body to `.wrangler/tmp/email/` instead of sending. Put any two addresses in
+`.dev.vars` and you can read what the church would receive.
+
 ## Configuration
 
 **Worker secrets** — dashboard → Workers & Pages → `tygerberg-sda-website` →
@@ -38,11 +43,21 @@ secrets, not Actions or build-time variables ([C-18](./CONCERNS.md#c-18--the-api
 |---|---|---|
 | `YOUTUBE_API_KEY` | Google Cloud key, YouTube Data API v3 enabled | LIVE badge stays hidden |
 | `YOUTUBE_CHANNEL_ID` | `UCtZlioPBBORWMMMSJ9BE1Wg` | as above |
-| `CONTACT_WEBHOOK_URL` | Where `/api/contact` forwards; any JSON POST endpoint | form reports `not-configured` |
+| `CONTACT_WEBHOOK_URL` | Fallback channel; any JSON POST endpoint | webhook channel skipped |
+
+The three contact **email** addresses are not secrets — they are committed vars,
+a temporary decision recorded in
+[ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md). See the vars table
+below.
 
 The two YouTube values may be stored as repo secrets instead — the production
 workflow uploads them — but remove one from repo settings without removing it
 from the workflow and an empty value gets uploaded.
+
+The three contact values are deliberately **not** on that bridge. It passes
+secrets by name, so listing an optional one there overwrites a working
+dashboard value with an empty string the moment the repo secret is absent. Set
+them in the dashboard, or with `wrangler secret put`.
 
 **Worker vars** — `wrangler.jsonc`, edit and redeploy, no code change:
 
@@ -50,6 +65,14 @@ from the workflow and an empty value gets uploaded.
 |---|---|---|
 | `LIVE_CHECK_CRON` | `* 9-12 * * 6` | When the LIVE badge may spend quota, read as a *window*. Saturdays 09:00–12:59, covering the 09:00–12:30 stream. **Keep the minute field `*`** ([C-14](./CONCERNS.md#c-14--live_check_cron-is-a-window-not-a-schedule)). |
 | `LIVE_CHECK_TZ` | `Africa/Johannesburg` | Timezone the window is evaluated in |
+| `CONTACT_EMAIL_TO` | `notifications@cloudkid.link` | Where `/api/contact` emails. Must be a **verified destination address** on the account |
+| `CONTACT_EMAIL_FROM` | `mailer@cloudkid.link` | From address, on a domain onboarded to Cloudflare Email Service |
+| `CONTACT_EMAIL_BCC` | `hello@cloudkid.link` | Optional blind copy. Must **also** be verified — an unverified one fails the whole send |
+
+Changing any of the three means changing it in **two** places in
+`wrangler.jsonc`: the `vars` block and the `send_email` binding's
+`allowed_destination_addresses` / `allowed_sender_addresses`. Out of step, the
+send is rejected ([C-31](./CONCERNS.md#c-31--email-is-tried-first-and-the-webhook-is-the-fallback)).
 
 **Build-time env vars** — set by the workflows; unset means "on":
 
@@ -104,7 +127,11 @@ The window is checked *before* credentials, so on any day but Saturday you get
 check the deploy log's upload step rather than curling mid-week.
 
 `POST /api/contact` returns an `outcome`: `forwarded`, `not-configured`,
-`invalid` (with `errors` naming the fields), or `forward-error`.
+`invalid` (with `errors` naming the fields), or `forward-error`. On `forwarded`
+it also returns `via` — `email` or `webhook` — naming the channel that carried
+it. Email is tried first and the webhook is the fallback; only one runs per
+submission ([C-31](./CONCERNS.md#c-31--email-is-tried-first-and-the-webhook-is-the-fallback)).
+`not-configured` means *neither* channel is set up.
 
 `/api/contact` has no bot protection of its own and Cloudflare's is **off by
 default** — [C-21](./CONCERNS.md#c-21--abuse-protection-is-cloudflares-and-it-is-off-by-default).

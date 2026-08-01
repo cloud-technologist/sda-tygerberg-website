@@ -283,6 +283,79 @@ before forwarding.
 
 ---
 
+### C-31 — Email is tried first, and the webhook is the fallback
+
+`/api/contact` has two delivery channels and uses exactly one per submission:
+Cloudflare Email Sending if it is configured, otherwise `CONTACT_WEBHOOK_URL`.
+The webhook is only reached when email is unconfigured *or* fails. That order is
+deliberate — email needs no third-party automation account and lands in an inbox
+someone already reads — and so is the exclusivity: running both on every
+submission would double every enquiry in the church's inbox.
+
+`via` in the response says which channel carried it. It is diagnostic only; the
+form ignores it and reads `outcome`, so the existing failure wording is unchanged
+whichever channel broke.
+
+Three things bound the email path, and none of them are obvious from the code:
+
+- **It only sends to verified destination addresses on the account.** Sends to
+  those are free on every plan and do not touch the sending quota. Sending to an
+  arbitrary visitor address is a different product tier, so do not repurpose this
+  binding to send confirmations back to the person who filled in the form — it
+  will fail with `E_SENDER_NOT_VERIFIED` or eat quota, depending on setup.
+
+  Note the plural. `CONTACT_EMAIL_BCC` adds a second recipient, and *every*
+  recipient is checked, so an unverified BCC fails the whole send rather than
+  dropping just the blind copy. Adding an archive address can therefore stop the
+  church receiving enquiries at all. Put one real submission through the form
+  after setting it — `via` in the response tells you which channel survived.
+
+  A "destination address" is also not the same thing as a custom address on your
+  own routed domain. `something@yourdomain` that Email Routing forwards onward is
+  a *custom address*; the destination is the external inbox behind it. On the free
+  path the binding wants the latter.
+- **The three addresses are committed to `wrangler.jsonc`, not Worker secrets.**
+  This reverses the original decision and is deliberate, temporary, and written
+  up in [ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md) — read that
+  before changing it, and revert it when any of its three triggers fires. The
+  short version: they are role addresses on the operator's own domain rather
+  than personal or church-member data, so publishing them costs spam to three
+  controlled mailboxes, and it buys a self-contained deploy plus the fence below.
+- **The binding is fenced by `allowed_destination_addresses` and
+  `allowed_sender_addresses`.** This was impossible while the addresses were
+  secret — naming them in the fence would have published them, which was the
+  thing being avoided. Public addresses make it free, and it bounds the blast
+  radius: a bug in `contactEmail.ts` cannot mail a stranger, it fails.
+
+  The fence duplicates the addresses inside `wrangler.jsonc`. Change one list and
+  not the other and Cloudflare rejects the send.
+
+A missing binding or a missing value is not an error: `sendContactEmail` returns
+false and delivery moves on. That is what keeps a partial configuration working
+rather than throwing.
+
+---
+
+### C-32 — Visitor input is flattened before it reaches a header
+
+`name` is only length-checked on the way in, so it can still hold a CR or LF. Put
+raw into the subject, that is header injection — a submitted name ending
+`\r\nBcc: someone@example.com` becomes a real header. `headerSafe()` strips
+control characters and collapses whitespace before the name is interpolated, and
+clamps the result so a 200-character name cannot run away with the subject line.
+
+The platform encodes headers itself, so this is belt to that braces. Keep it
+anyway: it costs one `replace` per submission, and the failure it prevents is
+silent — a redirected copy of every enquiry, visible to nobody.
+
+The visitor's email address goes into `replyTo` unflattened, which is safe for a
+different reason: the validating regex is `[^\s@]+@[^\s@]+\.[^\s@]+`, and `\s`
+excludes CR and LF, so an address that passed validation cannot contain a line
+break. Everything else the visitor typed goes in the body, where a newline is
+just a newline.
+
+---
+
 ## Environments
 
 ### C-22 — The devtest build has no Worker and no transformer

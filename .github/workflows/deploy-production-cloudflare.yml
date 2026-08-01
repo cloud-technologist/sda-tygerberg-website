@@ -13,6 +13,12 @@ name: Deploy production (Cloudflare)
 # The deploy step uploads them to the Worker (see `secrets:` below). Both must
 # be present: the step passes them by name, so removing one from repo settings
 # without also removing it here uploads an empty value.
+#
+# The contact secrets — CONTACT_EMAIL_TO, CONTACT_EMAIL_FROM and
+# CONTACT_WEBHOOK_URL — are deliberately NOT listed below. They are optional
+# (either channel alone works), and that same by-name behaviour would blank a
+# working dashboard value on every deploy where the repo secret is unset. Set
+# them in the Cloudflare dashboard or with `wrangler secret put` instead.
 on:
   push:
     branches: [main]
