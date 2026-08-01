@@ -21,7 +21,9 @@ export function FirstVisit() {
           {t.firstVisitHeading}
         </h2>
         <p className="mb-8 text-slate">{t.firstVisitSub}</p>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-4">
+        {/* 320px rather than 260px so five entries settle at 3+2 on a wide
+            screen instead of 4+1, which leaves a lone card stranded. */}
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] gap-4">
           {t.firstVisit.map((entry) => (
             <div key={entry.q} className="rounded-card border border-subtle bg-cream-card p-5">
               <div className="mb-1.5 font-serif text-xl text-ink">{entry.q}</div>

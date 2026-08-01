@@ -162,9 +162,9 @@ Needs the church board:
 2. **The Ampsdraers 2025/2026 roster is missing an entry** — Laura Rolff chairs
    the Persoonlike Bedieningkomitee & Evangelisasie and has a card here; the
    roster names no chair for it. The site is the more current of the two.
-3. **"Your first visit" answers** — the section is built and hides itself while
-   `homeCopy.firstVisit` is empty. Needs, in both languages: parking, children's
-   programme and ages, wheelchair access, what people wear, service language.
+3. **Children's programme ages** — the answers are in and the section is live,
+   but the board gave times (09:30–11:00) without an age range. Worth adding, so
+   a parent knows whether it covers their child.
 4. **Weekly ministry schedule** is 4 fixed entries in `homeCopy.ts`. Move to a
    KV/CMS-backed Worker route if it starts changing seasonally.
 5. **A photograph for the social card** — `og-image.png` is a typographic card.
