@@ -65,9 +65,9 @@ them in the dashboard, or with `wrangler secret put`.
 |---|---|---|
 | `LIVE_CHECK_CRON` | `* 9-12 * * 6` | When the LIVE badge may spend quota, read as a *window*. Saturdays 09:00–12:59, covering the 09:00–12:30 stream. **Keep the minute field `*`** ([C-14](./CONCERNS.md#c-14--live_check_cron-is-a-window-not-a-schedule)). |
 | `LIVE_CHECK_TZ` | `Africa/Johannesburg` | Timezone the window is evaluated in |
-| `CONTACT_EMAIL_TO` | `notifications@cloudkid.link` | Where `/api/contact` emails. Must be a **verified destination address** on the account |
+| `CONTACT_EMAIL_TO` | `hello@cloudkid.link` | Where `/api/contact` emails. Must be a **verified destination address**, and must reach a person — Email Routing forwards this one to an inbox |
 | `CONTACT_EMAIL_FROM` | `mailer@cloudkid.link` | From address, on a domain onboarded to Cloudflare Email Service |
-| `CONTACT_EMAIL_BCC` | `hello@cloudkid.link` | Optional blind copy. Must **also** be verified — an unverified one fails the whole send |
+| `CONTACT_EMAIL_BCC` | `notifications@cloudkid.link` | Archive copy, handled by a Worker. Must **also** be verified — an unverified one fails the whole send |
 
 Changing any of the three means changing it in **two** places in
 `wrangler.jsonc`: the `vars` block and the `send_email` binding's
