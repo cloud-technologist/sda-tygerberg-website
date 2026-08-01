@@ -1,15 +1,10 @@
-import { useId, useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
-import { BANKING_DETAILS, givingCopy } from '../../data/giving';
 import { withBase } from '../../lib/base';
 
 export function GetInvolved() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
-  const g = givingCopy[lang];
-  const [showBanking, setShowBanking] = useState(false);
-  const bankingId = useId();
 
   const cardClass = (tint: boolean) =>
     `rounded-card-lg border p-6.5 flex flex-col justify-between ${
@@ -54,41 +49,16 @@ export function GetInvolved() {
               <div className="mb-2.5 font-serif text-xl">{t.giveTitle}</div>
               <p className="mb-4 text-sm leading-relaxed text-blue-pale">{t.giveDesc}</p>
             </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowBanking((s) => !s)}
-                aria-expanded={showBanking}
-                aria-controls={bankingId}
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded-pill bg-orange px-4 py-2 text-[13px] font-bold text-white hover:bg-orange-hover transition-colors"
-              >
-                {t.giveCta} <span aria-hidden>{showBanking ? '–' : '+'}</span>
-              </button>
-
-              {showBanking && (
-                <div
-                  id={bankingId}
-                  className="mt-4 rounded-card bg-navy-deep/60 p-4 text-sm leading-relaxed text-blue-pale"
-                >
-                  <div className="mb-2 text-xs font-bold uppercase tracking-[.08em] text-orange">
-                    {g.accountDetailsLabel}
-                  </div>
-                  <div className="mb-2 font-serif text-base text-white">
-                    {BANKING_DETAILS.organisation}
-                  </div>
-                  <dl className="mb-3 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1">
-                    <dt className="text-blue-muted">{g.bankLabel}</dt>
-                    <dd>{BANKING_DETAILS.bank}</dd>
-                    <dt className="text-blue-muted">{g.accountNumberLabel}</dt>
-                    <dd>{BANKING_DETAILS.accountNumber}</dd>
-                    <dt className="text-blue-muted">{g.branchCodeLabel}</dt>
-                    <dd>{BANKING_DETAILS.branchCode}</dd>
-                    <dt className="text-blue-muted">{g.referenceLabel}</dt>
-                    <dd>{g.referenceNote}</dd>
-                  </dl>
-                </div>
-              )}
-            </div>
+            {/* Was an in-card accordion holding the banking details. Giving now
+                has its own page, because a second method (Zapper) plus a QR
+                code does not fit in a third of a card — and a giving link is
+                the kind of thing people want to send to someone else. */}
+            <a
+              href={withBase('/giving')}
+              className="w-full inline-flex items-center justify-center gap-1.5 rounded-pill bg-orange px-4 py-2 text-[13px] font-bold text-white hover:bg-orange-hover transition-colors"
+            >
+              {t.giveCta} →
+            </a>
           </div>
         </div>
       </div>

@@ -1,8 +1,9 @@
 import type { APIContext } from 'astro';
 
 /**
- * Hand-written rather than via @astrojs/sitemap — four static routes don't
- * justify another production dependency.
+ * Hand-written rather than via @astrojs/sitemap — a handful of static routes
+ * don't justify another production dependency. Add new pages here by hand;
+ * nothing enumerates `src/pages/` for you.
  *
  * Nothing advertises this file: Cloudflare serves a managed robots.txt with no
  * `Sitemap:` directive, so it has to be
@@ -14,6 +15,7 @@ const ROUTES = [
   { path: '/beliefs/', priority: '0.8' },
   { path: '/connect/', priority: '0.7' },
   { path: '/bible-studies/', priority: '0.7' },
+  { path: '/giving/', priority: '0.6' },
 ];
 
 export function GET({ site }: APIContext) {
