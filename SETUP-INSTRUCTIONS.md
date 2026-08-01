@@ -201,8 +201,8 @@ npm run deploy        # astro build && wrangler deploy
 
 > **This is not optional.** The contact form has no spam filtering of its own —
 > it was deliberately left to Cloudflare's edge. Until the two settings below
-> are on, `/api/contact` is an open endpoint that forwards to the church's
-> webhook on every valid POST.
+> are on, `/api/contact` is an open endpoint that delivers to the church on
+> every valid POST — which, once §6 is done, means straight into their inbox.
 
 Both settings only apply to traffic through a **custom domain on your zone**.
 A `*.workers.dev` URL does not get zone-level bot protection, so the Worker
@@ -437,8 +437,15 @@ A green setup looks like:
       on most days is correct, not an error
 - [ ] `/connect` and `/bible-studies` load and show the form
 - [ ] Submitting a real request lands in the church inbox
+- [ ] That submission's response says `"via":"email"` — if it says
+      `"via":"webhook"`, the email channel is not configured and the fallback
+      carried it; if it says `not-configured`, neither is set (step 6)
 - [ ] The devtest Pages URL loads, with the form shown read-only behind its
       preview notice (expected — no Worker there)
+
+Send one real submission through the form rather than by `curl`. It is the only
+check that proves the whole chain — validation, delivery, and a human actually
+receiving it — and `via` tells you which channel did the work.
 
 ---
 
@@ -453,6 +460,9 @@ A green setup looks like:
 | LIVE badge never shows | Missing/invalid key, or outside the window | `curl /api/live-status` and read `source` |
 | `/api/live-status` says `not-configured` | Secrets missing on the Worker | Step 4 — and check they weren't added as Actions secrets by mistake |
 | `/api/live-status` says `invalid-schedule` | Malformed cron or unknown timezone in `wrangler.jsonc` | Fails closed and spends no quota; fix the expression and redeploy |
-| Contact form says it isn't live yet | `CONTACT_WEBHOOK_URL` unset | Step 6, then redeploy |
-| Contact form reports a send failure | Webhook timed out or returned non-2xx | Check the webhook; the Worker waits 10s |
+| Contact form says it isn't live yet | Neither delivery channel is configured | Step 6 — the two `CONTACT_EMAIL_*` secrets *or* `CONTACT_WEBHOOK_URL` — then redeploy |
+| Contact form reports a send failure | Every configured channel failed | Worker logs name the cause; see the two rows below |
+| Log shows `E_SENDER_NOT_VERIFIED` | `CONTACT_EMAIL_FROM` is on a domain not onboarded to Email Sending | Step 6.2, and check the domain shows as verified |
+| Email silently never arrives, `via` says `webhook` | `CONTACT_EMAIL_TO` isn't a *verified* destination address | Step 6.1 — click the confirmation link Cloudflare emailed |
+| Webhook fallback times out | Endpoint slow or returning non-2xx | Check the webhook; the Worker waits 10s |
 | A secret change had no effect | Secrets apply at deploy time | Re-run the production workflow, or `npm run deploy` |

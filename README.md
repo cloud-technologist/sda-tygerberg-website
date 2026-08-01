@@ -28,6 +28,11 @@ npx tsc --noEmit     # typecheck
 locally, copy `.dev.vars.example` to `.dev.vars` (gitignored), add a YouTube key,
 and widen `LIVE_CHECK_CRON` to `* * * * *` so you needn't wait for Saturday.
 
+The contact form's email channel needs no Cloudflare account locally: `wrangler
+dev` simulates the `send_email` binding, printing From/To/Subject and writing the
+body to `.wrangler/tmp/email/` instead of sending. Put any two addresses in
+`.dev.vars` and you can read what the church would receive.
+
 ## Configuration
 
 **Worker secrets** — dashboard → Workers & Pages → `tygerberg-sda-website` →
@@ -45,6 +50,11 @@ secrets, not Actions or build-time variables ([C-18](./CONCERNS.md#c-18--the-api
 The two YouTube values may be stored as repo secrets instead — the production
 workflow uploads them — but remove one from repo settings without removing it
 from the workflow and an empty value gets uploaded.
+
+The three contact values are deliberately **not** on that bridge. It passes
+secrets by name, so listing an optional one there overwrites a working
+dashboard value with an empty string the moment the repo secret is absent. Set
+them in the dashboard, or with `wrangler secret put`.
 
 **Worker vars** — `wrangler.jsonc`, edit and redeploy, no code change:
 
