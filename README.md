@@ -38,7 +38,9 @@ secrets, not Actions or build-time variables ([C-18](./CONCERNS.md#c-18--the-api
 |---|---|---|
 | `YOUTUBE_API_KEY` | Google Cloud key, YouTube Data API v3 enabled | LIVE badge stays hidden |
 | `YOUTUBE_CHANNEL_ID` | `UCtZlioPBBORWMMMSJ9BE1Wg` | as above |
-| `CONTACT_WEBHOOK_URL` | Where `/api/contact` forwards; any JSON POST endpoint | form reports `not-configured` |
+| `CONTACT_EMAIL_TO` | Where `/api/contact` emails; must be a **verified destination address** on the account | email channel skipped |
+| `CONTACT_EMAIL_FROM` | From address, on a domain onboarded to Cloudflare Email Service | as above |
+| `CONTACT_WEBHOOK_URL` | Fallback channel; any JSON POST endpoint | webhook channel skipped |
 
 The two YouTube values may be stored as repo secrets instead — the production
 workflow uploads them — but remove one from repo settings without removing it
@@ -104,7 +106,11 @@ The window is checked *before* credentials, so on any day but Saturday you get
 check the deploy log's upload step rather than curling mid-week.
 
 `POST /api/contact` returns an `outcome`: `forwarded`, `not-configured`,
-`invalid` (with `errors` naming the fields), or `forward-error`.
+`invalid` (with `errors` naming the fields), or `forward-error`. On `forwarded`
+it also returns `via` — `email` or `webhook` — naming the channel that carried
+it. Email is tried first and the webhook is the fallback; only one runs per
+submission ([C-31](./CONCERNS.md#c-31--email-is-tried-first-and-the-webhook-is-the-fallback)).
+`not-configured` means *neither* channel is set up.
 
 `/api/contact` has no bot protection of its own and Cloudflare's is **off by
 default** — [C-21](./CONCERNS.md#c-21--abuse-protection-is-cloudflares-and-it-is-off-by-default).

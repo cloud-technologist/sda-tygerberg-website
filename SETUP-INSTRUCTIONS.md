@@ -22,11 +22,11 @@ dashboards; never commit them to the repository.
 | **Cloudflare account** | Hosts the Worker and the live site | Free plan is enough |
 | **A domain in that Cloudflare account** | The production URL | Currently `cloudkid.link`, serving `tygerberg-sda.cloudkid.link` |
 | **Google account** | YouTube Data API key for the LIVE badge | Optional — everything else works without it |
-| **Somewhere to receive form submissions** | The contact form's destination | Zapier / Make / Apps Script / n8n / any JSON webhook |
+| **Somewhere to receive form submissions** | The contact form's destination | A church inbox verified in Cloudflare, or any JSON webhook |
 | **Node 24 LTS + git** | Local development only | Version is pinned in `.nvmrc` |
 
 The site degrades honestly when a piece is missing: no YouTube key means the
-LIVE badge simply never appears, and no contact webhook means the request
+LIVE badge simply never appears, and no contact destination means the request
 forms say so instead of silently dropping people's messages. You can set this
 up in stages.
 
@@ -62,16 +62,21 @@ cp .dev.vars.example .dev.vars
 # .dev.vars
 YOUTUBE_API_KEY="<your-key>"
 YOUTUBE_CHANNEL_ID="UCtZlioPBBORWMMMSJ9BE1Wg"
+CONTACT_EMAIL_TO="kerk@example.org"
+CONTACT_EMAIL_FROM="webwerf@example.org"
 CONTACT_WEBHOOK_URL="https://<your-webhook>"
 ```
 
-Two local-testing tips:
+Three local-testing tips:
 
 - Widening `LIVE_CHECK_CRON` to `* * * * *` in `.dev.vars` saves waiting
   until Saturday morning to see the LIVE badge work.
-- To test the contact form without a real webhook, point
-  `CONTACT_WEBHOOK_URL` at any local server that returns `200` and log what
-  it receives.
+- The email channel needs no Cloudflare account locally. `wrangler dev`
+  simulates the binding: the two addresses above can be anything, and the
+  message is printed and written to `.wrangler/tmp/email/` rather than sent.
+- To test the webhook fallback, leave the two `CONTACT_EMAIL_*` lines out —
+  email is preferred whenever it is configured — and point
+  `CONTACT_WEBHOOK_URL` at any local server that returns `200`.
 
 ---
 
@@ -256,6 +261,8 @@ Set them in the Cloudflare dashboard — **Workers & Pages →
 ```sh
 npx wrangler secret put YOUTUBE_API_KEY
 npx wrangler secret put YOUTUBE_CHANNEL_ID
+npx wrangler secret put CONTACT_EMAIL_TO
+npx wrangler secret put CONTACT_EMAIL_FROM
 npx wrangler secret put CONTACT_WEBHOOK_URL
 ```
 
@@ -263,7 +270,12 @@ npx wrangler secret put CONTACT_WEBHOOK_URL
 |---|---|---|
 | `YOUTUBE_API_KEY` | LIVE badge | A Google Cloud API key with YouTube Data API v3 enabled (step 5) |
 | `YOUTUBE_CHANNEL_ID` | LIVE badge | `UCtZlioPBBORWMMMSJ9BE1Wg` |
-| `CONTACT_WEBHOOK_URL` | Contact form | Where submissions are delivered (step 6) |
+| `CONTACT_EMAIL_TO` | Contact form | The church inbox, as a verified destination address (step 6) |
+| `CONTACT_EMAIL_FROM` | Contact form | e.g. `webwerf@yourdomain` on the onboarded sending domain (step 6) |
+| `CONTACT_WEBHOOK_URL` | Contact form (fallback) | Where submissions go if email is unset or fails (step 6.4) |
+
+The contact form needs **either** the two email secrets **or** the webhook — not
+both. Set neither and it reports `not-configured`.
 
 Secrets take effect on the next deploy. After changing one, re-run the
 production workflow from the Actions tab (`workflow_dispatch`) or run
@@ -301,15 +313,66 @@ section before widening it.
 
 ---
 
-## 6. The contact webhook
+## 6. Where contact submissions go
 
-`/connect` and `/bible-studies` post to `/api/contact`, which forwards each
-validated submission as JSON to `CONTACT_WEBHOOK_URL`. Any endpoint that
-accepts a JSON `POST` works, which keeps the church off any single vendor.
+`/connect` and `/bible-studies` post to `/api/contact`, which delivers each
+validated submission down **one** of two channels:
 
-Common choices: a **Zapier** catch hook, a **Make** custom webhook, a **Google
-Apps Script** web app, or a self-hosted **n8n** webhook — each of which can
-turn the payload into an email to the right person.
+1. **Email** (preferred) — Cloudflare Email Sending, straight to the church
+   inbox. No third-party account, no automation service.
+2. **A webhook** (fallback) — used only when email is unconfigured or fails.
+
+Set up whichever suits you. Email is fewer moving parts and is what the rest of
+this section covers; the webhook is §6.4.
+
+### 6.1 Verify the destination address
+
+The free path sends only to a **verified destination address** on your
+Cloudflare account. Sends to those cost nothing on any plan and do not consume
+the sending quota.
+
+1. Cloudflare dashboard → your domain → **Email** → **Email Routing**.
+2. **Destination addresses** → *Add address* → the church's shared inbox.
+3. Cloudflare emails that address a confirmation link. **Click it** — an
+   unverified address is rejected at send time.
+
+Use a shared church inbox, not an individual's personal address. Whoever
+receives these is handling personal information under POPIA.
+
+### 6.2 Onboard the sending domain
+
+The From address must sit on a domain Cloudflare is authorised to send for, and
+the domain must use Cloudflare DNS.
+
+1. Dashboard → **Email** → **Email Sending** → add your domain.
+2. Cloudflare adds the DNS records itself — SPF, DKIM, DMARC, and MX records on
+   a `cf-bounce` subdomain. Propagation is usually 5–15 minutes.
+3. Wait for the domain to show as verified before testing.
+
+### 6.3 Set the two secrets
+
+```sh
+npx wrangler secret put CONTACT_EMAIL_TO     # the verified address from 6.1
+npx wrangler secret put CONTACT_EMAIL_FROM   # e.g. webwerf@yourdomain
+```
+
+They are secrets rather than entries in `wrangler.jsonc` because this repository
+is public and a committed address is a scraped address — CONCERNS.md C-31. The
+`send_email` binding itself is already declared in `wrangler.jsonc`; you do not
+need to add it.
+
+A submission arrives as plain text, subject `Webwerf — Verbind: <name>` (or
+`Bybelstudie`), with **Reply-To set to the visitor's address** when they gave
+one, so replying from the inbox reaches them directly.
+
+### 6.4 The webhook fallback
+
+Any endpoint that accepts a JSON `POST` works, which keeps the church off any
+single vendor. Common choices: a **Zapier** catch hook, a **Make** custom
+webhook, a **Google Apps Script** web app, or a self-hosted **n8n** webhook.
+
+This runs only when the email channel is unconfigured or fails, so setting it
+alongside email gives you a spare rather than a duplicate.
 
 The payload delivered to your webhook looks like this:
 
@@ -338,9 +401,18 @@ Whoever receives these is handling personal information: route them to a
 shared church inbox rather than an individual's personal address, and delete
 them once the request is dealt with.
 
-Until `CONTACT_WEBHOOK_URL` is set, the endpoint answers `not-configured` and
-the form tells visitors it isn't live yet rather than pretending a message was
-sent.
+Until **either** channel is configured, the endpoint answers `not-configured`
+and the form tells visitors it isn't live yet rather than pretending a message
+was sent. The response's `via` field names the channel that carried a delivery,
+which is the quickest way to confirm which one is actually doing the work.
+
+### 6.5 Trying it locally
+
+`npm run worker:dev` simulates the `send_email` binding instead of sending: it
+prints From/To/Subject to the terminal and writes the body to
+`.wrangler/tmp/email/`. Put any values in `.dev.vars` — no Cloudflare account,
+no verified address, nothing leaves the machine — and you can read exactly what
+the church would receive.
 
 ---
 

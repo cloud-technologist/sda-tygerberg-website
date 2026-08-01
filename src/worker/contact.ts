@@ -1,9 +1,14 @@
 /// <reference types="@cloudflare/workers-types" />
 
-export type ContactEnv = {
+import { sendContactEmail, type ContactEmailEnv } from './contactEmail';
+
+export type ContactEnv = ContactEmailEnv & {
   // Any endpoint accepting a JSON POST. A Worker secret, not a build-time var:
   // it is a delivery address, and a public one invites spam. Unset answers
   // `not-configured` and the form says so.
+  //
+  // The fallback channel now: email is tried first when it is configured — see
+  // `deliver()` below and C-31.
   CONTACT_WEBHOOK_URL?: string;
 };
 
@@ -12,11 +17,16 @@ export type ContactTopic = 'connect' | 'bible-study';
 
 export type ContactOutcome = 'forwarded' | 'not-configured' | 'invalid' | 'forward-error';
 
+/** Which channel actually carried it. Diagnostic only — the form ignores it. */
+export type ContactVia = 'email' | 'webhook';
+
 export type ContactResult = {
   ok: boolean;
   outcome: ContactOutcome;
   /** Field names that failed validation, so the form can mark them inline. */
   errors?: string[];
+  /** Present only on `forwarded`. */
+  via?: ContactVia;
 };
 
 const TOPICS: ContactTopic[] = ['connect', 'bible-study'];
@@ -97,8 +107,44 @@ async function forward(url: string, payload: unknown): Promise<boolean> {
 }
 
 /**
+ * Delivers one submission, preferring email. Returns the channel that carried
+ * it, or `null` if every configured channel failed.
+ *
+ * Email first because it needs no third-party service and lands in an inbox a
+ * person already reads; the webhook stays as the fallback so an account without
+ * Email Service onboarding still works. Both configured means the webhook is
+ * only reached when email fails — deliberately not both at once, which would
+ * double every enquiry. CONCERNS.md C-31.
+ */
+async function deliver(env: ContactEnv, clean: Record<string, string>): Promise<ContactVia | null> {
+  const submittedAt = new Date().toISOString();
+
+  if (await sendContactEmail(env, clean, submittedAt)) return 'email';
+
+  if (env.CONTACT_WEBHOOK_URL) {
+    const sent = await forward(env.CONTACT_WEBHOOK_URL, {
+      ...clean,
+      submittedAt,
+      // Recorded because POPIA consent has to be demonstrable after the fact,
+      // and the church's inbox is the only place this submission survives.
+      consent: true,
+      source: 'tygerberg-sda-website',
+    });
+    if (sent) return 'webhook';
+  }
+
+  return null;
+}
+
+/** Is any delivery channel set up at all? Decides `not-configured` vs a failure. */
+function isConfigured(env: ContactEnv): boolean {
+  const email = Boolean(env.EMAIL && env.CONTACT_EMAIL_TO && env.CONTACT_EMAIL_FROM);
+  return email || Boolean(env.CONTACT_WEBHOOK_URL);
+}
+
+/**
  * POST /api/contact for the /connect and /bible-studies forms. Only reports
- * `forwarded` once the webhook has actually accepted it — CONCERNS.md C-19.
+ * `forwarded` once a channel has actually accepted it — CONCERNS.md C-19.
  */
 export async function handleContact(request: Request, env: ContactEnv): Promise<Response> {
   if (request.method !== 'POST') {
@@ -136,20 +182,13 @@ export async function handleContact(request: Request, env: ContactEnv): Promise<
   const { errors, clean } = validate(body);
   if (!clean) return json({ ok: false, outcome: 'invalid', errors }, 400);
 
-  if (!env.CONTACT_WEBHOOK_URL) {
+  if (!isConfigured(env)) {
     return json({ ok: false, outcome: 'not-configured' }, 503);
   }
 
-  const delivered = await forward(env.CONTACT_WEBHOOK_URL, {
-    ...clean,
-    submittedAt: new Date().toISOString(),
-    // Recorded because POPIA consent has to be demonstrable after the fact,
-    // and the church's inbox is the only place this submission survives.
-    consent: true,
-    source: 'tygerberg-sda-website',
-  });
+  const via = await deliver(env, clean);
 
-  return delivered
-    ? json({ ok: true, outcome: 'forwarded' }, 200)
+  return via
+    ? json({ ok: true, outcome: 'forwarded', via }, 200)
     : json({ ok: false, outcome: 'forward-error' }, 502);
 }

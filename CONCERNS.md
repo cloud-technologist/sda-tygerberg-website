@@ -283,6 +283,61 @@ before forwarding.
 
 ---
 
+### C-31 — Email is tried first, and the webhook is the fallback
+
+`/api/contact` has two delivery channels and uses exactly one per submission:
+Cloudflare Email Sending if it is configured, otherwise `CONTACT_WEBHOOK_URL`.
+The webhook is only reached when email is unconfigured *or* fails. That order is
+deliberate — email needs no third-party automation account and lands in an inbox
+someone already reads — and so is the exclusivity: running both on every
+submission would double every enquiry in the church's inbox.
+
+`via` in the response says which channel carried it. It is diagnostic only; the
+form ignores it and reads `outcome`, so the existing failure wording is unchanged
+whichever channel broke.
+
+Three things bound the email path, and none of them are obvious from the code:
+
+- **It only sends to a verified destination address on the account.** Sends to
+  those are free on every plan and do not touch the sending quota. Sending to an
+  arbitrary visitor address is a different product tier, so do not repurpose this
+  binding to send confirmations back to the person who filled in the form — it
+  will fail with `E_SENDER_NOT_VERIFIED` or eat quota, depending on setup.
+- **The address lives in `CONTACT_EMAIL_TO`, a Worker secret**, for the same
+  reason `CONTACT_WEBHOOK_URL` is one: this repository is public, and an address
+  committed to it is a scraped address.
+- **Therefore the binding carries no `allowed_destination_addresses`.** That
+  fence would have to name the address in committed config, which is the thing
+  being avoided. What actually bounds the binding is Cloudflare refusing
+  unverified destinations. If the church later accepts publishing the address,
+  adding the fence is a one-line change and strictly better.
+
+A missing binding or a missing secret is not an error: `sendContactEmail` returns
+false and delivery moves on. That is what keeps `wrangler dev` working, where the
+binding exists but the secrets usually do not.
+
+---
+
+### C-32 — Visitor input is flattened before it reaches a header
+
+`name` is only length-checked on the way in, so it can still hold a CR or LF. Put
+raw into the subject, that is header injection — a submitted name ending
+`\r\nBcc: someone@example.com` becomes a real header. `headerSafe()` strips
+control characters and collapses whitespace before the name is interpolated, and
+clamps the result so a 200-character name cannot run away with the subject line.
+
+The platform encodes headers itself, so this is belt to that braces. Keep it
+anyway: it costs one `replace` per submission, and the failure it prevents is
+silent — a redirected copy of every enquiry, visible to nobody.
+
+The visitor's email address goes into `replyTo` unflattened, which is safe for a
+different reason: the validating regex is `[^\s@]+@[^\s@]+\.[^\s@]+`, and `\s`
+excludes CR and LF, so an address that passed validation cannot contain a line
+break. Everything else the visitor typed goes in the body, where a newline is
+just a newline.
+
+---
+
 ## Environments
 
 ### C-22 — The devtest build has no Worker and no transformer

@@ -33,6 +33,14 @@
     "LIVE_CHECK_CRON": "* 9-12 * * 6",
     "LIVE_CHECK_TZ": "Africa/Johannesburg"
   },
+  // Lets /api/contact email the church directly. The address it sends to is a
+  // Worker secret (CONTACT_EMAIL_TO), so no `destination_address` or
+  // `allowed_destination_addresses` is set here — this repository is public and
+  // either one would publish the church's inbox to be scraped. The trade-off is
+  // that the binding is unfenced in config; what actually bounds it is
+  // Cloudflare only accepting verified destination addresses for a free send.
+  // See C-31.
+  "send_email": [{ "name": "EMAIL" }],
   "routes": [
     // Production custom domain (zone already lives in the Cloudflare
     // account) — `wrangler deploy` provisions/attaches this automatically.
