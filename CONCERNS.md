@@ -361,3 +361,20 @@ The predicate is a type guard, so `Card` receives `photo: string` and the
 component has no placeholder branch left to fall through to. If every entry
 loses its photo the carousel returns `null` rather than dividing by zero in the
 ring arithmetic (C-12).
+
+### C-30 — A drag that starts on a headshot must still work
+
+The photo fills the card, so a drag to work the deck almost always starts on an
+`<img>`. Images are draggable by default: the browser begins its own image drag,
+the pointer stream stops arriving, and the swipe dies halfway with the deck
+rubber-banding back. `draggable={false}` is what prevents that, and it is not
+decoration.
+
+The same reasoning covers `select-none` on the track (a slow drag across a name
+would otherwise highlight text rather than move the deck) and
+`-webkit-touch-callout: none` on the image (iOS offers "Save Image" on a press
+that was meant as the start of a swipe).
+
+Emulated touch does not reproduce any of these — the native image drag only
+showed up under a real mouse drag, and the callout needs a device. Do not
+conclude they are unnecessary because a touch harness passes without them.

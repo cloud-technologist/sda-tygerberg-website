@@ -116,8 +116,12 @@ function Headshot({
       loading={eager ? 'eager' : 'lazy'}
       decoding="async"
       onError={() => setTransformFailed(true)}
+      // A drag starting on a photo is the normal way to work the deck, and an
+      // image is draggable by default: the browser starts its own image drag
+      // and the pointer stream stops arriving mid-swipe — C-30.
+      draggable={false}
       // Absolute, not `h-full` in flow — CONCERNS.md C-06.
-      className="absolute inset-0 h-full w-full object-cover object-top"
+      className="absolute inset-0 h-full w-full object-cover object-top [-webkit-touch-callout:none]"
     />
   );
 }
@@ -337,7 +341,9 @@ export function AboutCarousel() {
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerCancel}
             // Vertical panning stays with the page; horizontal is the swipe.
-            className="relative touch-pan-y overflow-hidden pb-2"
+            // `select-none` so a slow drag across a name highlights text
+            // instead of moving the deck — C-30.
+            className="relative touch-pan-y select-none overflow-hidden pb-2"
           >
             <div aria-hidden className={`invisible ${CARD_WIDTH}`}>
               <Card head={tallest} lang={lang} sizer />
