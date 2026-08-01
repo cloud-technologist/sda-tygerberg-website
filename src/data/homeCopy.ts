@@ -26,9 +26,10 @@ export type HomeCopy = {
   weekHeading: string;
   weekSub: string;
   /**
-   * Waiting on answers from the board — see the README's open items. The
-   * section hides itself while this is empty, so adding entries here is all
-   * that's needed to publish it.
+   * Answered by the board. The section hides itself while this is empty, so
+   * emptying it unpublishes the section rather than leaving a bare heading.
+   * Only publish what the church has actually confirmed — a wrong answer about
+   * wheelchair access or parking is worse than no answer.
    */
   firstVisit: FirstVisitEntry[];
   firstVisitHeading: string;
@@ -103,7 +104,28 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     ],
     weekHeading: 'Hierdie week by die kerk',
     weekSub: 'Almal welkom — bring gerus ’n vriend saam.',
-    firstVisit: [],
+    firstVisit: [
+      {
+        q: 'Waar parkeer ek?',
+        a: 'Daar is beveiligde parkering op die perseel, maar dit is beperk. Kom gerus ’n bietjie vroeër as jy seker wil wees van ’n plek.',
+      },
+      {
+        q: 'Is daar iets vir die kinders?',
+        a: 'Ja — kinderprogramme loop van 09:30 tot 11:00, terwyl Sabbatskool en Lesstudie aan die gang is. Daarna sluit die kinders by die gemeente aan vir die Goddelike Diens.',
+      },
+      {
+        q: 'Is die gebou rolstoeltoeganklik?',
+        a: 'Ja, die gebou is rolstoeltoeganklik.',
+      },
+      {
+        q: 'Wat trek mense aan?',
+        a: 'Formeel tot semi-formeel — kerkdrag. Jy sal nie uit plek voel in ’n baadjie of ’n rok nie.',
+      },
+      {
+        q: 'In watter taal is die diens?',
+        a: 'Hoofsaaklik Afrikaans, met Engels van tyd tot tyd. Daar is nie tolkdienste beskikbaar nie.',
+      },
+    ],
     firstVisitHeading: 'Jou eerste besoek',
     firstVisitSub: 'Wat om te verwag wanneer jy die eerste keer by ons aansluit.',
     aboutHeading: 'Ontmoet ons departementshoofde',
@@ -179,7 +201,28 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     ],
     weekHeading: 'This week at church',
     weekSub: 'Everyone welcome — feel free to bring a friend.',
-    firstVisit: [],
+    firstVisit: [
+      {
+        q: 'Where do I park?',
+        a: 'There is secured parking on the premises, but it is limited. Arrive a little early if you want to be sure of a bay.',
+      },
+      {
+        q: 'Is there anything for the children?',
+        a: 'Yes — children’s programmes run from 09:30 to 11:00, while Sabbath School and Lesson Study are on. The children then join the congregation for the Divine Service.',
+      },
+      {
+        q: 'Is the building wheelchair accessible?',
+        a: 'Yes, the building is wheelchair accessible.',
+      },
+      {
+        q: 'What do people wear?',
+        a: 'Formal to semi-formal — church attire. You will not feel out of place in a jacket or a dress.',
+      },
+      {
+        q: 'What language is the service in?',
+        a: 'Primarily Afrikaans, with English from time to time. Translation is not available.',
+      },
+    ],
     firstVisitHeading: 'Your first visit',
     firstVisitSub: 'What to expect the first time you join us.',
     aboutHeading: 'Meet our department heads',
