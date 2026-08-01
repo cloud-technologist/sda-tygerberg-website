@@ -337,3 +337,27 @@ overlay covering the map.
 
 Zoom buttons still work, mouse dragging still works on desktop, and the
 directions links above the map handle real navigation.
+
+---
+
+## Roster
+
+### C-29 — A head without a headshot is not rendered
+
+`shownDepartmentHeads` filters `departmentHeads` down to entries that have a
+`photo`, and the carousel renders only those. A photoless card was a striped
+box reading "HOD photo": on a page whose purpose is to introduce people, an
+empty frame reads as neglect rather than as a photo still to come.
+
+**The roster in `departmentHeads.ts` stays complete** — it is the record of who
+holds what, and shortening it would lose that. Only the rendering is filtered.
+
+The consequence to keep in view: **11 of 21 are currently on the site, and the
+pastor is one of the ten who are not.** Anyone asking why a particular person
+is missing wants a headshot, not a code change. Adding the file and a `photo:`
+line publishes them, with nothing else to touch.
+
+The predicate is a type guard, so `Card` receives `photo: string` and the
+component has no placeholder branch left to fall through to. If every entry
+loses its photo the carousel returns `null` rather than dividing by zero in the
+ring arithmetic (C-12).

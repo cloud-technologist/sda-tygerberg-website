@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { homeCopy } from '../../data/homeCopy';
-import { departmentHeads, type DepartmentHead } from '../../data/departmentHeads';
+import { shownDepartmentHeads, type DepartmentHeadWithPhoto } from '../../data/departmentHeads';
 import type { Lang } from '../../data/site';
 import {
   cdnImageUrl,
@@ -26,7 +26,7 @@ const MIN_FLICK_PX = 10;
 /** For anything slower, how much of a card must be covered to commit. */
 const COMMIT_RATIO = 0.22;
 
-const COUNT = departmentHeads.length;
+const COUNT = shownDepartmentHeads.length;
 
 /**
  * Slot a card occupies relative to the active one: 0 is leftmost visible,
@@ -54,10 +54,9 @@ const CARD_WIDTH = 'w-[72%] sm:w-[45%] lg:w-[31%]';
 const PHOTO_ASPECT = '4/5';
 
 /** Smallest candidate of the first photo — already in its srcset, so free. */
-const PROBE_URL = (() => {
-  const withPhoto = departmentHeads.find((head) => head.photo);
-  return withPhoto ? cdnImageUrl(headshotSource(withPhoto.photo!), HEADSHOT_WIDTHS[0]) : null;
-})();
+const PROBE_URL = shownDepartmentHeads[0]
+  ? cdnImageUrl(headshotSource(shownDepartmentHeads[0].photo), HEADSHOT_WIDTHS[0])
+  : null;
 
 /**
  * Whether the edge transformer is answering: asked once, shared by every card.
@@ -131,7 +130,7 @@ function Card({
   eager = false,
   sizer = false,
 }: {
-  head: DepartmentHead;
+  head: DepartmentHeadWithPhoto;
   lang: Lang;
   cdn?: ImageCdnStatus;
   eager?: boolean;
@@ -147,13 +146,9 @@ function Card({
             'repeating-linear-gradient(45deg, var(--color-tan) 0 10px, var(--color-tan-border) 10px 20px)',
         }}
       >
-        {sizer ? null : head.photo ? (
-          <Headshot name={head.name} photo={head.photo} eager={eager} cdn={cdn} />
-        ) : lang === 'af' ? (
-          'HOD foto'
-        ) : (
-          'HOD photo'
-        )}
+        {/* No placeholder branch: a card only exists if its photo does. The
+            stripes still show through while the image is in flight. */}
+        {sizer ? null : <Headshot name={head.name} photo={head.photo} eager={eager} cdn={cdn} />}
       </div>
       <div className="p-4 text-center">
         <div className="font-serif text-lg text-navy">{head.name}</div>
@@ -169,6 +164,12 @@ function Card({
 }
 
 export function AboutCarousel() {
+  // No headshots at all means no deck: `slotOf` takes `% COUNT` and would
+  // divide by zero, and there would be nothing to show in any case. Safe ahead
+  // of the hooks below because COUNT is fixed at module load, so hook order
+  // cannot differ between renders.
+  if (COUNT === 0) return null;
+
   const { lang } = useLanguage();
   const t = homeCopy[lang];
 
@@ -296,7 +297,7 @@ export function AboutCarousel() {
 
   // Rendered invisibly in flow to give the track a height — the real cards are
   // absolutely positioned and cannot.
-  const tallest = departmentHeads.reduce((a, b) =>
+  const tallest = shownDepartmentHeads.reduce((a, b) =>
     b.roles[lang].length > a.roles[lang].length ? b : a,
   );
 
@@ -342,7 +343,7 @@ export function AboutCarousel() {
               <Card head={tallest} lang={lang} sizer />
             </div>
 
-            {departmentHeads.map((head, index) => {
+            {shownDepartmentHeads.map((head, index) => {
               const slot = slotOf(index, active);
               const animate = !dragging && !reduceMotion && isAnimatedSlot(slot);
               // Three cards show at the widest breakpoint; the rest are hidden
@@ -411,7 +412,7 @@ export function AboutCarousel() {
 
           {/* Announced only while the deck is not moving on its own — C-13. */}
           <span className="sr-only" aria-live={paused || reduceMotion ? 'polite' : 'off'}>
-            {active + 1} {t.carouselOf} {COUNT} — {departmentHeads[active].name}
+            {active + 1} {t.carouselOf} {COUNT} — {shownDepartmentHeads[active].name}
           </span>
         </div>
       </div>

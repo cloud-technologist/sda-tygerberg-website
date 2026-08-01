@@ -23,7 +23,13 @@ export type DepartmentHead = {
   photo?: string;
 };
 
-/** 11 of 21 have headshots; the rest show the placeholder. README to add one. */
+/** A head whose headshot exists — the only kind that gets a card. */
+export type DepartmentHeadWithPhoto = DepartmentHead & { photo: string };
+
+/**
+ * The full roster, photographed or not. Kept complete because it is the record
+ * of who holds what; `shownDepartmentHeads` decides who appears on the page.
+ */
 export const departmentHeads: DepartmentHead[] = [
   {
     id: 'kerkraad',
@@ -166,3 +172,16 @@ export const departmentHeads: DepartmentHead[] = [
     roles: { af: ['Gesinsbediening'], en: ['Family Ministry'] },
   },
 ];
+
+/**
+ * Who the carousel actually renders. A card with no headshot was a striped box
+ * reading "HOD photo" — an unfilled slot on a page introducing people, which
+ * reads as neglect rather than as a photo still to come.
+ *
+ * Adding a `photo` is what publishes someone, so nothing else has to be
+ * touched when a headshot arrives. The predicate is a type guard so the
+ * carousel receives `photo: string` and cannot be handed an empty card.
+ */
+export const shownDepartmentHeads = departmentHeads.filter(
+  (head): head is DepartmentHeadWithPhoto => Boolean(head.photo),
+);

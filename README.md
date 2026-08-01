@@ -158,7 +158,10 @@ Needs the church board:
 
 1. **Headshots for 10 of the 21** — Arnold Neuhoff, Lisa Branders, Morné Louw,
    Adéle Meyer, Chris Meyer, Gert Coetzee, Peter Wallace, Sanet Stevens, Bertie
-   Hoffman, the Louw family.
+   Hoffman, the Louw family. **These ten are not on the site** — a card needs a
+   photo to render ([C-29](./CONCERNS.md#c-29--a-head-without-a-headshot-is-not-rendered)),
+   so the carousel currently shows 11. Note that the pastor is among the ten.
+   Adding the file and a `photo:` line publishes each one.
 2. **The Ampsdraers 2025/2026 roster is missing an entry** — Laura Rolff chairs
    the Persoonlike Bedieningkomitee & Evangelisasie and has a card here; the
    roster names no chair for it. The site is the more current of the two.
