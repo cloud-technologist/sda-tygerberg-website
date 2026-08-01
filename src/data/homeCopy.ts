@@ -99,7 +99,7 @@ export const homeCopy: Record<Lang, HomeCopy> = {
     week: [
       { day: 'Dinsdag', name: 'Biduur', time: '19:00 – 20:00' },
       { day: 'Woensdag', name: 'Bybelstudie', time: '19:00 – 21:00' },
-      { day: 'Donderdag', name: 'Volleybal', time: '19:00 – 21:00' },
+      { day: 'Donderdag', name: 'Vlugbal', time: '19:00 – 21:00' },
       { day: 'Vrydag', name: 'Junior Jeug', time: '19:00 – 21:00' },
     ],
     weekHeading: 'Hierdie week by die kerk',
