@@ -194,12 +194,34 @@ zero quota, rather than quietly matching everything. `matchField` validates term
 *shape* before parsing, because `Number('')` is 0 — a bare `split('-')` would
 read `-11` as `0-11` and swing the window open from midnight.
 
-### C-16 — There is no server-side caching, so quota scales with viewers
+### C-16 — One upstream verdict is shared, or quota scales with viewers
 
-`search.list` costs 100 units against 10,000/day. One viewer across a 3-hour
-window is ~3,600 units; three concurrent viewers exceed the free tier. An
-`api-error` late in a service is almost always exhausted quota. Levers: a
-narrower window, a longer `POLL_INTERVAL_MS`, or a raised quota.
+`search.list` costs 100 units against a 10,000/day default — about **100 calls a
+day**. The client polls every 5 minutes, so without sharing, each viewer spends
+separately: a 30-person hour is ~360 calls, three and a half times the day's
+whole allowance, and the badge dies mid-service until Pacific midnight.
+
+`liveStatusCache.ts` puts one verdict in the Cache API for 60s, so every viewer
+in a colo rides the same upstream call. That 30-person hour becomes ~60 calls.
+
+**The cache is per-colo, not global** — the true figure is 60 × colos in play,
+which for one congregation in Cape Town is usually one. The Cache API is used
+rather than a module-global because a global lives only as long as one isolate,
+which would barely help.
+
+Concurrent misses can still stampede: arrivals spread across a 5-minute poll, so
+that is a few extra calls at the start of a service, not a multiplier. If it
+ever needs to be exact, that is what a Durable Object is for.
+
+**`api-error` is cached too, deliberately.** When quota *is* exhausted, retrying
+on every request is the worst available behaviour.
+
+`outside-window`, `not-configured` and `invalid-schedule` are never cached: they
+cost nothing, and `outside-window` is time-sensitive — caching it could hold the
+badge's state across the 12:00 boundary.
+
+Remaining levers if quota is still tight: a narrower window, a longer
+`POLL_INTERVAL_MS`, a longer `LIVE_CACHE_SECONDS`, or a raised quota.
 
 ### C-17 — The poll loop must never terminate
 
@@ -361,3 +383,20 @@ The predicate is a type guard, so `Card` receives `photo: string` and the
 component has no placeholder branch left to fall through to. If every entry
 loses its photo the carousel returns `null` rather than dividing by zero in the
 ring arithmetic (C-12).
+
+### C-30 — A drag that starts on a headshot must still work
+
+The photo fills the card, so a drag to work the deck almost always starts on an
+`<img>`. Images are draggable by default: the browser begins its own image drag,
+the pointer stream stops arriving, and the swipe dies halfway with the deck
+rubber-banding back. `draggable={false}` is what prevents that, and it is not
+decoration.
+
+The same reasoning covers `select-none` on the track (a slow drag across a name
+would otherwise highlight text rather than move the deck) and
+`-webkit-touch-callout: none` on the image (iOS offers "Save Image" on a press
+that was meant as the start of a swipe).
+
+Emulated touch does not reproduce any of these — the native image drag only
+showed up under a real mouse drag, and the callout needs a device. Do not
+conclude they are unnecessary because a touch harness passes without them.

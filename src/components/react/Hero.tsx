@@ -44,13 +44,9 @@ export function Hero() {
 
       <div id="stroom" className="scroll-mt-24">
         <div className="overflow-hidden rounded-card-lg bg-navy-deep shadow-deep">
+          {/* No badge over the video: it sat on top of the title and channel
+              name YouTube draws in that corner. It lives in the bar below. */}
           <div className="relative bg-black" style={{ aspectRatio: '16/9' }}>
-            {isLive && (
-              <div className="absolute left-3.5 top-3.5 z-10 flex items-center gap-1.5 rounded-pill bg-orange/95 px-2.5 py-1.5 text-[11px] font-extrabold tracking-[.08em] text-white">
-                <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-white" />
-                {t.liveLabel}
-              </div>
-            )}
             <iframe
               src={SITE.youtubeUploadsEmbedUrl}
               title="Tygerberg SDA YouTube"
@@ -59,12 +55,25 @@ export function Hero() {
               className="absolute inset-0 h-full w-full border-0"
             />
           </div>
-          <div className="flex items-center justify-end p-4">
+          <div className="flex items-center gap-3 p-4">
+            {isLive && (
+              /* Status, not an action — so no orange fill, which in this bar
+                 would read as a second button beside the real one. */
+              <div className="flex items-center gap-2 rounded-pill bg-white/10 px-3 py-1.5 text-[11px] font-extrabold tracking-[.08em] text-white">
+                {/* motion-safe: a flashing dot is exactly what someone who asked
+                    for reduced motion asked not to see. It still reads as live
+                    without the pulse. */}
+                <span className="h-[7px] w-[7px] rounded-full bg-live motion-safe:animate-pulse" />
+                {t.liveLabel}
+              </div>
+            )}
             <a
               href={SITE.youtubeFeaturedUrl}
               target="_blank"
               rel="noopener"
-              className="rounded-pill bg-orange px-4.5 py-2 text-[12.5px] font-bold text-white hover:bg-orange-hover"
+              // ml-auto rather than justify-between: the button stays right
+              // whether or not the badge is there to push it.
+              className="ml-auto rounded-pill bg-orange px-4.5 py-2 text-[12.5px] font-bold text-white hover:bg-orange-hover"
             >
               {t.tabReplay}
             </a>

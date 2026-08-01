@@ -91,7 +91,13 @@ window and a `source`:
 | `outside-window` | Outside `LIVE_CHECK_CRON`; no API call made |
 | `not-configured` | Secrets missing |
 | `invalid-schedule` | Bad cron or timezone — fails closed, zero API calls |
-| `api-error` | YouTube refused; usually exhausted quota ([C-16](./CONCERNS.md#c-16--there-is-no-server-side-caching-so-quota-scales-with-viewers)) |
+| `api-error` | YouTube refused; usually exhausted quota ([C-16](./CONCERNS.md#c-16--one-upstream-verdict-is-shared-or-quota-scales-with-viewers)) |
+
+It also returns `cached`. `true` means the YouTube answer behind this verdict
+came from the shared edge entry rather than a fresh call, so it is at most 60s
+old. The window and credential checks always run fresh, so `cached` is only ever
+`true` alongside `youtube-api` or `api-error` — never `outside-window`
+([C-16](./CONCERNS.md#c-16--one-upstream-verdict-is-shared-or-quota-scales-with-viewers)).
 
 The window is checked *before* credentials, so on any day but Saturday you get
 `outside-window` whether or not secrets are set. To confirm secrets arrived,
