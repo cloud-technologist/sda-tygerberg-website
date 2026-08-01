@@ -32,7 +32,17 @@ export type LiveStatusResult = {
   window: { cron: string; timeZone: string; open: boolean };
 };
 
-async function askYouTube(apiKey: string, channelId: string): Promise<boolean | null> {
+/**
+ * Asks whether the channel is streaming. `null` means "could not tell" — a
+ * network hiccup or exhausted quota — as distinct from a confident `false`.
+ *
+ * Injectable so the caching layer can wrap *this* rather than the whole
+ * verdict: the window and credential checks must run on every request, or a
+ * cached answer would keep the badge alive past the window's close — C-16.
+ */
+export type AskLive = (apiKey: string, channelId: string) => Promise<boolean | null>;
+
+export const askYouTube: AskLive = async (apiKey, channelId) => {
   const url = new URL('https://www.googleapis.com/youtube/v3/search');
   url.searchParams.set('part', 'id');
   url.searchParams.set('channelId', channelId);
@@ -48,13 +58,21 @@ async function askYouTube(apiKey: string, channelId: string): Promise<boolean | 
   } catch {
     return null;
   }
-}
+};
 
 /**
- * Is the channel streaming? Spends quota only inside the configured window, and
- * there is no server-side caching — CONCERNS.md C-16.
+ * Is the channel streaming? Spends quota only inside the configured window.
+ *
+ * The window and credential checks always run here, on every request. Only
+ * `ask` is ever cached, by `liveStatusCache.ts` — caching this verdict instead
+ * would let a result from inside the window keep the badge alive after the
+ * window closed. CONCERNS.md C-16.
  */
-export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promise<LiveStatusResult> {
+export async function getLiveStatus(
+  env: LiveStatusEnv,
+  now = new Date(),
+  ask: AskLive = askYouTube,
+): Promise<LiveStatusResult> {
   const cron = env.LIVE_CHECK_CRON?.trim() || DEFAULT_CRON;
   const timeZone = env.LIVE_CHECK_TZ?.trim() || DEFAULT_TZ;
   const checkedAt = now.toISOString();
@@ -79,7 +97,7 @@ export async function getLiveStatus(env: LiveStatusEnv, now = new Date()): Promi
     return { isLive: false, source: 'not-configured', checkedAt, window };
   }
 
-  const isLive = await askYouTube(env.YOUTUBE_API_KEY, env.YOUTUBE_CHANNEL_ID);
+  const isLive = await ask(env.YOUTUBE_API_KEY, env.YOUTUBE_CHANNEL_ID);
   if (isLive === null) {
     // Hiccup or exhausted quota: hide the badge, let the client recover.
     return { isLive: false, source: 'api-error', checkedAt, window };

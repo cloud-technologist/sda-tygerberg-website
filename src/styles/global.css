@@ -17,6 +17,10 @@
   --color-blue-pale: #cfe0e8;
   --color-subtle: rgba(23, 37, 46, 0.1);
   --color-strong: rgba(23, 37, 46, 0.25);
+  /* The "on air" dot. Not in the handoff palette: green is the one colour that
+     reads as *live now* rather than as brand, and the brand orange is already
+     the colour of the buttons beside it. */
+  --color-live: #3ddc84;
 
   --font-serif: 'Newsreader', serif;
   --font-sans: 'Public Sans', system-ui, sans-serif;
