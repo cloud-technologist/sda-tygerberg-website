@@ -17,10 +17,10 @@ function BeliefsContent() {
   let counter = 0;
 
   return (
-    <div className="min-h-screen font-sans text-ink">
+    <div className="flex min-h-screen flex-col font-sans text-ink">
       <SubPageHeader backHome={t.backHome} />
 
-      <main id="main">
+      <main id="main" className="flex-1">
 
       <section className="mx-auto max-w-[780px] px-7 pb-8 pt-16 text-center">
         <div className="mb-4.5 text-xs font-bold uppercase tracking-[.16em] text-orange">

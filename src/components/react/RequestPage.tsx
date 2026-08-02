@@ -20,10 +20,10 @@ function RequestContent({ topic }: { topic: RequestTopic }) {
   const t = requestFormCopy[lang];
 
   return (
-    <div className="min-h-screen font-sans text-ink">
+    <div className="flex min-h-screen flex-col font-sans text-ink">
       <SubPageHeader backHome={t.backHome} />
 
-      <main id="main">
+      <main id="main" className="flex-1">
 
       <section className="mx-auto max-w-[720px] px-5 pb-10 pt-14 text-center sm:px-7 sm:pt-16">
         <div className="mb-4.5 text-xs font-bold uppercase tracking-[.16em] text-orange">
