@@ -14,12 +14,12 @@ import { Footer } from './Footer';
 export function Home() {
   return (
     <LanguageProvider>
-      <div className="min-h-screen font-sans text-ink">
+      <div className="flex min-h-screen flex-col font-sans text-ink">
         <Header />
         <a id="top" />
         {/* The landmark starts after the header so the skip link actually skips
             the nav — that is the whole point of it. */}
-        <main id="main">
+        <main id="main" className="flex-1">
           <Hero />
           <ServiceTimesStrip />
           <ThisWeek />
