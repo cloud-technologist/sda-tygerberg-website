@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
 import { withBase, canonicalPath } from '../lib/base';
-import { churchJsonLd } from '../lib/structuredData';
+import { churchJsonLd, websiteJsonLd } from '../lib/structuredData';
 
 interface Props {
   title: string;
@@ -28,7 +28,12 @@ const indexable = import.meta.env.PUBLIC_INDEXABLE !== 'false';
 const appVersion = import.meta.env.PUBLIC_APP_VERSION;
 const appCommit = import.meta.env.PUBLIC_APP_COMMIT;
 
-const jsonLd = churchJsonLd(site);
+// One @graph rather than two script tags: the WebSite node references the
+// Church node as its publisher, and a single graph is what lets `@id` resolve.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [websiteJsonLd(site), churchJsonLd(site)],
+};
 ---
 
 <!doctype html>
