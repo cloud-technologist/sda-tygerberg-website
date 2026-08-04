@@ -339,7 +339,7 @@ the sending quota.
 Use a shared church inbox, not an individual's personal address. Whoever
 receives these is handling personal information under POPIA.
 
-### 6.2 Onboard the sending domain
+### 6.2 Onboard the sending domain — **already done for `cloudkid.link`**
 
 The From address must sit on a domain Cloudflare is authorised to send for, and
 the domain must use Cloudflare DNS.
@@ -348,6 +348,21 @@ the domain must use Cloudflare DNS.
 2. Cloudflare adds the DNS records itself — SPF, DKIM, DMARC, and MX records on
    a `cf-bounce` subdomain. Propagation is usually 5–15 minutes.
 3. Wait for the domain to show as verified before testing.
+
+`cloudkid.link` is onboarded already, so `mailer@cloudkid.link` is a valid
+sender and this step needs nothing. Confirm at any time — all four must answer:
+
+```sh
+dig +short MX  cf-bounce.cloudkid.link                # bounce routing
+dig +short TXT cf-bounce.cloudkid.link                # sending SPF
+dig +short TXT cf-bounce._domainkey.cloudkid.link     # sending DKIM
+dig +short TXT _dmarc.cloudkid.link                   # DMARC
+```
+
+Email Sending and Email Routing use **separate** records and separate DKIM
+selectors (`cf-bounce._domainkey` vs `cf2024-1._domainkey`). A domain that
+routes mail is not thereby allowed to send it, so do not read the apex MX
+records as evidence for this step.
 
 ### 6.3 Set the two secrets
 
@@ -375,15 +390,27 @@ block and the binding's `allowed_destination_addresses` /
 `allowed_sender_addresses` — then redeploy. Out of step, Cloudflare rejects the
 send.
 
-What you *do* still have to do is §6.1 and §6.2 for these specific addresses:
-verify `notifications@` and `hello@` as destination addresses, and onboard the
-domain that `mailer@` sends from.
+What is left is **§6.1 only**: `hello@` and `notifications@` are Email Routing
+*custom addresses* — routing-rule patterns — and a working routing rule is not
+the same permission as being a verified **destination address**. Add each one
+under **Destination Addresses** and click its confirmation link. §6.2 is already
+satisfied.
+
+That applies on the Workers **Free** plan. On **Workers Paid**, Email Sending
+may address any recipient and §6.1 stops mattering for these two. Check the plan
+before spending time on it — it decides whether there is anything to do here.
 
 > **The BCC is not free of consequence.** Every recipient is checked, so an
 > unverified `notifications@cloudkid.link` fails the *whole* send — the church
 > stops receiving enquiries, not just losing the archive copy. Put one real
 > submission through the form and confirm the response says `"via":"email"`
 > before considering this done.
+>
+> Worth asking whether to keep it at all: `notifications@` routes to the
+> `cloudkid-link-r2-explorer` Worker, which does not handle enquiries, so the
+> archive copy currently goes nowhere anyone reads. Dropping the
+> `CONTACT_EMAIL_BCC` line — or pointing it at a second real inbox — removes a
+> recipient that can fail the send and buys back nothing.
 
 A submission arrives as plain text, subject `Webwerf — Verbind: <name>` (or
 `Bybelstudie`), with **Reply-To set to the visitor's address** when they gave

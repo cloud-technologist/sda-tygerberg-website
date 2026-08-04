@@ -34,25 +34,26 @@ export const departmentHeads: DepartmentHead[] = [
   {
     id: 'kerkraad',
     name: 'Lr. Arnold Neuhoff',
-    roles: { af: ['Leraar', 'Kerkraad'], en: ['Pastor', 'Church Board'] },
+    roles: {
+      af: ['Leraar', 'Kerkraad', 'Berading', 'Bloedbank'],
+      en: ['Pastor', 'Church Board', 'Counselling', 'Blood Bank'],
+    },
   },
   {
     id: 'ouderlinge',
     name: 'Jaco van Niekerk',
-    roles: {
-      af: ['Ouderling', 'Persoonlike Bediening', 'Strategiesebeplannings-komitee'],
-      en: ['Elder', 'Personal Ministries', 'Strategic Planning Committee'],
-    },
+    // Head elder and nothing else. The Ampsdraers roster also listed him under
+    // Persoonlike Bediening and the Strategiesebeplannings-komitee; the board
+    // has since confirmed both of those are Laura's, so they moved to her card.
+    roles: { af: ['Hoofouderling'], en: ['Head Elder'] },
     photo: 'TG-DH-Jaco.jpg',
   },
   {
     id: 'persoonlike-bediening',
     name: 'Laura Rolff',
-    // Next to Jaco on purpose: he holds "Persoonlike Bediening" as an elder,
-    // she chairs the committee under it. Not a duplicated title.
     roles: {
-      af: ['Persoonlike Bedieningkomitee', 'Evangelisasie'],
-      en: ['Personal Ministries Committee', 'Evangelism'],
+      af: ['Persoonlike Bediening', 'Strategiesebeplannings-komitee', 'Evangelisasie'],
+      en: ['Personal Ministries', 'Strategic Planning Committee', 'Evangelism'],
     },
     photo: 'TG-DH-Laura.jpg',
   },

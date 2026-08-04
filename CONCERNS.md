@@ -314,6 +314,35 @@ Three things bound the email path, and none of them are obvious from the code:
   own routed domain. `something@yourdomain` that Email Routing forwards onward is
   a *custom address*; the destination is the external inbox behind it. On the free
   path the binding wants the latter.
+
+  **Both configured recipients are custom addresses, not destination addresses.**
+  `hello@` and `notifications@` are routing-rule patterns on `cloudkid.link`. Each
+  has to be added and verified under **Email Routing → Destination Addresses**
+  before the free path will send to it; being a working routing rule is not the
+  same permission and does not substitute for it. On the Workers Paid plan the
+  question is moot — any recipient is allowed — so which of the two applies
+  depends on the account's plan, not on anything in this repo.
+- **The sending domain is already onboarded.** This was an open blocker and is
+  not one: `cloudkid.link` carries all four Email Sending records — `cf-bounce`
+  MX and SPF, `cf-bounce._domainkey` DKIM, and `_dmarc` — alongside the separate
+  Email Routing records on the apex. `CONTACT_EMAIL_FROM` is therefore a valid
+  sender and needs no further setup. Re-check with:
+
+  ```sh
+  dig +short TXT cf-bounce._domainkey.cloudkid.link   # Email Sending DKIM
+  dig +short TXT cf2024-1._domainkey.cloudkid.link    # Email Routing DKIM
+  ```
+
+  Different selectors, deliberately: onboarding one product does not onboard the
+  other, and a domain can have routing without sending.
+- **`CONTACT_EMAIL_BCC` currently archives into a script, not an inbox.**
+  `notifications@cloudkid.link` is routed by Email Routing to the
+  `cloudkid-link-r2-explorer` Worker, which has nothing to do with contact
+  enquiries. So the blind copy is at best discarded, and at worst — on the free
+  path, where it cannot be a verified destination address — it fails the *whole*
+  send and pushes every enquiry onto the webhook fallback. Either point it at a
+  second real inbox or drop the line; a BCC nobody reads is not worth the risk it
+  adds to the one recipient who does.
 - **The three addresses are committed to `wrangler.jsonc`, not Worker secrets.**
   This reverses the original decision and is deliberate, temporary, and written
   up in [ADR-0001](./docs/adr/0001-hardcode-contact-addresses.md) — read that
