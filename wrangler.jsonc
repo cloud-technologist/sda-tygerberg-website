@@ -53,6 +53,12 @@
     // notifications@ takes the archive copy. Swapping them back would deliver
     // every enquiry to a script and leave the blind copy as the only thing
     // anyone actually reads.
+    //
+    // That said, the archive copy is doing nothing useful: notifications@ is
+    // routed to the cloudkid-link-r2-explorer Worker, which does not handle
+    // enquiries. Delete this BCC line, or repoint it at a second real inbox,
+    // once someone decides which. Keeping it costs a recipient that has to be
+    // verified for the send to succeed at all. See C-31.
     "CONTACT_EMAIL_TO": "hello@cloudkid.link",
     "CONTACT_EMAIL_FROM": "mailer@cloudkid.link",
     "CONTACT_EMAIL_BCC": "notifications@cloudkid.link"
