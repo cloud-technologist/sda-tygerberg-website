@@ -11,8 +11,30 @@
     // picks 404.html up on its own, so only Cloudflare needs telling.
     "not_found_handling": "404-page"
   },
+  // Workers Logs and Traces. The nested `logs` / `traces` blocks are the
+  // per-signal switches and are what actually decides each one; the top-level
+  // `enabled` is the older single toggle that only ever governed logs.
+  //
+  // `persist: true` keeps both in the Cloudflare dashboard, which is the only
+  // place they are read from here — there is no external OTel destination
+  // configured, so turning `persist` off would discard them entirely.
+  //
+  // `head_sampling_rate: 1` logs every request. Right for a site at this
+  // traffic level; lower it if volume ever becomes a cost.
   "observability": {
-    "enabled": true
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": true,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
   },
   "vars": {
     // When the LIVE badge is allowed to cost YouTube API quota, as a 5-field
