@@ -1,13 +1,40 @@
 import { SITE, SABBATH_HOURS } from '../data/site';
 
 /**
+ * The name Google prints above the URL in a search result.
+ *
+ * Google picks one site name per host and reads `WebSite.name` first, ahead of
+ * `og:site_name`, `<title>` and headings. Without this node the site inherited
+ * the name Google had already derived for the parent domain — `cloudkid.link`
+ * publishes `"name": "Cloudkid Consulting"` — and church results appeared
+ * branded as a consultancy.
+ *
+ * Google only reads this from a host's **home page**, so it has to be present
+ * on `/`. It is emitted on every page anyway: the node describes the site, not
+ * the page, so it is true everywhere and cannot go missing from the one page
+ * that matters.
+ *
+ * Re-derived at the origin, so a domain change carries it automatically.
+ */
+export function websiteJsonLd(site: URL) {
+  return {
+    '@type': 'WebSite',
+    '@id': new URL('#website', site).href,
+    name: 'Tygerberg SDA Kerk',
+    alternateName: ['Tygerberg Sewendedag Adventiste Kerk', 'Tygerberg SDA Church'],
+    url: site.href,
+    inLanguage: 'af-ZA',
+    publisher: { '@id': new URL('#church', site).href },
+  };
+}
+
+/**
  * schema.org description of the congregation, emitted on every page, so a search
  * engine can answer "when does Tygerberg SDA meet". Restates what is already on
  * the page; both read from src/data/site.ts, so there is nothing to sync.
  */
 export function churchJsonLd(site: URL) {
   return {
-    '@context': 'https://schema.org',
     '@type': 'Church',
     // The congregation, not the page — every page emits the same node.
     '@id': new URL('#church', site).href,
