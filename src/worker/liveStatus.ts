@@ -32,9 +32,24 @@ export type LiveStatusResult = {
   isLive: boolean;
   source: LiveStatusSource;
   checkedAt: string;
+  /**
+   * The broadcast itself, when the API named one. Null whenever `isLive` is
+   * false, and also when it is true but the response carried no id — the client
+   * has to cope with a live stream it cannot deep-link to.
+   */
+  videoId: string | null;
+  /** `videoId` as a watch URL, so the client never assembles YouTube URLs. */
+  watchUrl: string | null;
   /** The window this was evaluated against, echoed back to make config mistakes obvious. */
   window: { cron: string; timeZone: string; open: boolean };
 };
+
+/**
+ * What the upstream said: whether a broadcast is running and, when one is,
+ * which video it is. `videoId` is null for a confident "not live" and also for
+ * a live answer that arrived without a usable id.
+ */
+export type LiveAnswer = { isLive: boolean; videoId: string | null };
 
 /**
  * Asks whether the channel is streaming. `null` means "could not tell" — a
@@ -44,7 +59,12 @@ export type LiveStatusResult = {
  * verdict: the window and credential checks must run on every request, or a
  * cached answer would keep the badge alive past the window's close — C-16.
  */
-export type AskLive = (apiKey: string, channelId: string) => Promise<boolean | null>;
+export type AskLive = (apiKey: string, channelId: string) => Promise<LiveAnswer | null>;
+
+/** The canonical watch URL for a broadcast id. */
+export function watchUrlFor(videoId: string): string {
+  return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+}
 
 export const askYouTube: AskLive = async (apiKey, channelId) => {
   const url = new URL('https://www.googleapis.com/youtube/v3/search');
@@ -53,12 +73,19 @@ export const askYouTube: AskLive = async (apiKey, channelId) => {
   url.searchParams.set('eventType', 'live');
   url.searchParams.set('type', 'video');
   url.searchParams.set('key', apiKey);
+  // The channel can only be streaming one thing at a time as far as this badge
+  // is concerned, and a smaller page is a smaller parse.
+  url.searchParams.set('maxResults', '1');
 
   try {
     const res = await fetch(url.toString());
     if (!res.ok) return null;
-    const data = (await res.json()) as { items?: unknown[] };
-    return (data.items?.length ?? 0) > 0;
+    const data = (await res.json()) as { items?: { id?: { videoId?: string } }[] };
+    const first = data.items?.[0];
+    if (!first) return { isLive: false, videoId: null };
+    // `type=video` should guarantee an id, but a missing one is a live stream
+    // we simply cannot link to — not a reason to hide the badge.
+    return { isLive: true, videoId: first.id?.videoId ?? null };
   } catch {
     return null;
   }
@@ -81,9 +108,11 @@ export async function getLiveStatus(
   const timeZone = env.LIVE_CHECK_TZ?.trim() || DEFAULT_TZ;
   const checkedAt = now.toISOString();
 
+  const offline = { isLive: false, videoId: null, watchUrl: null } as const;
+
   if (!isValidCronWindow(cron, timeZone, now)) {
     return {
-      isLive: false,
+      ...offline,
       source: 'invalid-schedule',
       checkedAt,
       window: { cron, timeZone, open: false },
@@ -94,18 +123,26 @@ export async function getLiveStatus(
   const window = { cron, timeZone, open };
 
   if (!open) {
-    return { isLive: false, source: 'outside-window', checkedAt, window };
+    return { ...offline, source: 'outside-window', checkedAt, window };
   }
 
   if (!env.YOUTUBE_API_KEY || !env.YOUTUBE_CHANNEL_ID) {
-    return { isLive: false, source: 'not-configured', checkedAt, window };
+    return { ...offline, source: 'not-configured', checkedAt, window };
   }
 
-  const isLive = await ask(env.YOUTUBE_API_KEY, env.YOUTUBE_CHANNEL_ID);
-  if (isLive === null) {
+  const answer = await ask(env.YOUTUBE_API_KEY, env.YOUTUBE_CHANNEL_ID);
+  if (answer === null) {
     // Hiccup or exhausted quota: hide the badge, let the client recover.
-    return { isLive: false, source: 'api-error', checkedAt, window };
+    return { ...offline, source: 'api-error', checkedAt, window };
   }
 
-  return { isLive, source: 'youtube-api', checkedAt, window };
+  const videoId = answer.isLive ? answer.videoId : null;
+  return {
+    isLive: answer.isLive,
+    videoId,
+    watchUrl: videoId ? watchUrlFor(videoId) : null,
+    source: 'youtube-api',
+    checkedAt,
+    window,
+  };
 }

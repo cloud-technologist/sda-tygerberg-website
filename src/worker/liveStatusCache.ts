@@ -4,6 +4,7 @@ import {
   askYouTube,
   getLiveStatus,
   type AskLive,
+  type LiveAnswer,
   type LiveStatusEnv,
   type LiveStatusResult,
 } from './liveStatus';
@@ -31,8 +32,12 @@ const CACHE_PATH = '/__live-status';
  */
 const workerCaches = caches as unknown as { default: Cache };
 
-/** What goes in the cache: the upstream answer alone. `null` = could not tell. */
-type CachedAnswer = { isLive: boolean | null };
+/**
+ * What goes in the cache: the upstream answer alone, `answer: null` meaning
+ * "could not tell". Wrapped in an object because a bare `null` body is
+ * indistinguishable from a parse failure once it has been through JSON.
+ */
+type CachedAnswer = { answer: LiveAnswer | null };
 
 /**
  * `getLiveStatus`, with the *upstream call* shared by every viewer in a colo for
@@ -70,11 +75,11 @@ export async function getLiveStatusCached(
     const hit = await cache.match(key);
     if (hit) {
       cached = true;
-      return ((await hit.json()) as CachedAnswer).isLive;
+      return ((await hit.json()) as CachedAnswer).answer;
     }
 
-    const isLive = await askYouTube(apiKey, channelId);
-    const stored = new Response(JSON.stringify({ isLive } satisfies CachedAnswer), {
+    const answer = await askYouTube(apiKey, channelId);
+    const stored = new Response(JSON.stringify({ answer } satisfies CachedAnswer), {
       headers: {
         'Content-Type': 'application/json',
         // s-maxage: this entry is read by the Worker, never by a browser.
@@ -82,7 +87,7 @@ export async function getLiveStatusCached(
       },
     });
     ctx.waitUntil(cache.put(key, stored));
-    return isLive;
+    return answer;
   };
 
   // `ask` runs only if the window is open and the credentials are present, so a

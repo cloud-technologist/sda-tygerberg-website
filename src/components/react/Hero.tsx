@@ -6,7 +6,7 @@ import { useLiveStatus } from './useLiveStatus';
 export function Hero() {
   const { lang } = useLanguage();
   const t = homeCopy[lang];
-  const isLive = useLiveStatus();
+  const { isLive, watchUrl } = useLiveStatus();
 
   return (
     <section className="mx-auto grid max-w-content grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] items-center gap-13 px-7 pb-10 pt-15">
@@ -30,15 +30,21 @@ export function Hero() {
           >
             {t.ctaVisit}
           </a>
-          <a
-            href={SITE.youtubeChannelUrl}
-            target="_blank"
-            rel="noopener"
-            className="flex items-center gap-2 rounded-pill border-[1.5px] border-navy px-6.5 py-3.5 text-[15px] font-semibold text-navy hover:bg-navy hover:text-white"
-          >
-            <span className="inline-block h-2 w-2 rounded-full bg-orange" />
-            {t.ctaWatch}
-          </a>
+          {/* Only while a broadcast is actually running: the rest of the week
+              this invited people to a stream that was not there. It links to
+              the broadcast the API named, falling back to the channel's live
+              tab when the answer arrived without an id. */}
+          {isLive && (
+            <a
+              href={watchUrl ?? SITE.youtubeLiveUrl}
+              target="_blank"
+              rel="noopener"
+              className="flex items-center gap-2 rounded-pill border-[1.5px] border-navy px-6.5 py-3.5 text-[15px] font-semibold text-navy hover:bg-navy hover:text-white"
+            >
+              <span className="inline-block h-2 w-2 rounded-full bg-orange motion-safe:animate-pulse" />
+              {t.ctaWatch}
+            </a>
+          )}
         </div>
       </div>
 
