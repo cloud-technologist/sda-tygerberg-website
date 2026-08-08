@@ -12,10 +12,20 @@ const POLL_INTERVAL_MS = 5 * 60_000;
 
 type LiveStatusResponse = {
   isLive?: boolean;
+  watchUrl?: string | null;
 };
 
-export function useLiveStatus(): boolean {
-  const [isLive, setIsLive] = useState(false);
+/**
+ * `watchUrl` is the running broadcast, and can be null even while live: the
+ * Worker only fills it when the API named a video id. Callers that link
+ * somewhere must fall back to the channel themselves.
+ */
+export type LiveStatus = { isLive: boolean; watchUrl: string | null };
+
+const OFFLINE: LiveStatus = { isLive: false, watchUrl: null };
+
+export function useLiveStatus(): LiveStatus {
+  const [status, setStatus] = useState<LiveStatus>(OFFLINE);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -29,10 +39,14 @@ export function useLiveStatus(): boolean {
         const data = res.ok ? ((await res.json()) as LiveStatusResponse) : null;
         if (cancelled) return;
         // A non-answer clears the badge too, or a 5xx pins it on — C-17.
-        setIsLive(Boolean(data?.isLive));
+        setStatus(
+          data?.isLive
+            ? { isLive: true, watchUrl: typeof data.watchUrl === 'string' ? data.watchUrl : null }
+            : OFFLINE,
+        );
       } catch {
         if (cancelled) return;
-        setIsLive(false);
+        setStatus(OFFLINE);
       }
 
       // Always reschedule: the loop must never terminate — C-17.
@@ -47,5 +61,5 @@ export function useLiveStatus(): boolean {
     };
   }, []);
 
-  return isLive;
+  return status;
 }

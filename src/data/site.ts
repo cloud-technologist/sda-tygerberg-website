@@ -12,6 +12,10 @@ export const SITE = {
   // "Featured", not /videos — /videos surfaced an old section, not what the
   // channel curates.
   youtubeFeaturedUrl: 'https://www.youtube.com/@SDATygerberg/featured',
+  // Fallback only. The live CTA normally links to the video id the YouTube API
+  // named; this catches a live answer that arrived without one, and YouTube
+  // redirects it to whatever the channel is streaming.
+  youtubeLiveUrl: 'https://www.youtube.com/@SDATygerberg/live',
   // Auto-generated "uploads" playlist: always the latest video, no maintenance.
   // youtube-nocookie.com because the regular embed domain needs third-party
   // storage access that iOS Safari blocks, leaving a blank black box.
