@@ -158,6 +158,13 @@ The window is checked *before* credentials, so on any day but Saturday you get
 `outside-window` whether or not secrets are set. To confirm secrets arrived,
 check the deploy log's upload step rather than curling mid-week.
 
+When a broadcast is running it also returns `videoId` and `watchUrl` — the
+stream YouTube named, which is what the hero's "Kyk Lewendig" button links to.
+Both are `null` whenever `isLive` is false, and can be `null` even while live if
+the API answered without an id; the button then falls back to the channel's
+`/live` tab. That button renders **only** while `isLive` is true, so on any
+ordinary day the hero shows one call to action, not two.
+
 `POST /api/contact` returns an `outcome`: `forwarded`, `not-configured`,
 `invalid` (with `errors` naming the fields), or `forward-error`. On `forwarded`
 it also returns `via` — `email` or `webhook` — naming the channel that carried
